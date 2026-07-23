@@ -5,9 +5,7 @@
 :80 {
     root * /app/web
     encode zstd br gzip
-    @notStatic {
-        not file
+    php_server {
+        index controleurFrontal.php
     }
-    rewrite @notStatic /controleurFrontal.php
-    php_server
 }
