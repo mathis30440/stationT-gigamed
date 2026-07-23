@@ -3,7 +3,7 @@
 	admin off
 }
 
-:{env.PORT} {
+:{$PORT} {
 	root * /app/web
 
 	handle /ressources/* {
