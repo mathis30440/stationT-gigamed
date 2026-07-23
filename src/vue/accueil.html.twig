@@ -1,0 +1,99 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Accueil — Station T{% endblock %}
+
+{% block contenu %}
+
+<section class="hero">
+    <div class="hero-tag">Plateforme territoriale d'innovation</div>
+    <h1>La plateforme d'innovation territoriale au service des entreprises et des filières</h1>
+    <p>
+        Station T connecte les besoins concrets du territoire à des solutions innovantes testables localement.
+        La démarche permet de faire émerger, qualifier et déployer des expérimentations utiles pour les entreprises,
+        les partenaires et les collectivités.
+    </p>
+    <div class="hero-actions">
+        {% if not connexionUtilisateur.estConnecte() %}
+            <a href="{{ route('afficherFormulaireInscription') }}" class="btn btn-primary">Rejoindre Station T</a>
+            <a href="{{ route('afficherFormulaireConnexion') }}" class="btn btn-outline-white">Se connecter</a>
+        {% else %}
+            <a href="{{ route('monEspace') }}" class="btn btn-primary">Accéder à mon espace</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="accueil-section">
+    <h2 class="section-title">À qui s'adresse le dispositif ?</h2>
+    <div class="public-grid">
+        <div class="public-card">
+            <div class="public-icon">🏢</div>
+            <p>Entreprises du territoire</p>
+        </div>
+        <div class="public-card">
+            <div class="public-icon">🚀</div>
+            <p>Startups et porteurs de solutions innovantes</p>
+        </div>
+        <div class="public-card">
+            <div class="public-icon">🤝</div>
+            <p>Partenaires économiques et institutionnels</p>
+        </div>
+        <div class="public-card">
+            <div class="public-icon">🏛️</div>
+            <p>Collectivités, sites pilotes et acteurs de filière</p>
+        </div>
+    </div>
+</section>
+
+<section class="accueil-section">
+    <h2 class="section-title">Les 6 filières prioritaires</h2>
+    <div class="filieres-grid">
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Tourisme.png') }}" alt="Tourisme" class="filiere-picto"></div>
+            <span>Tourisme balnéaire &amp; durable</span>
+        </div>
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Nautisme.png') }}" alt="Nautisme" class="filiere-picto"></div>
+            <span>Nautisme &amp; plaisance</span>
+        </div>
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Commerce.png') }}" alt="Commerce" class="filiere-picto"></div>
+            <span>Commerce &amp; artisanat</span>
+        </div>
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Agri.png') }}" alt="Agriculture" class="filiere-picto"></div>
+            <span>Agriculture &amp; viticulture</span>
+        </div>
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Sports.png') }}" alt="Sport" class="filiere-picto"></div>
+            <span>Sport &amp; bien-être</span>
+        </div>
+        <div class="filiere-card">
+            <div class="filiere-picto-wrap"><img src="{{ asset('../ressources/image/Picto Ville de demain.png') }}" alt="Ville de demain" class="filiere-picto"></div>
+            <span>Ville de demain &amp; services de proximité</span>
+        </div>
+    </div>
+</section>
+
+<section class="accueil-section">
+    <h2 class="section-title">Comment contribuer ?</h2>
+    <div class="flux-steps">
+        <div class="flux-step">
+            <div class="flux-step-num">1</div>
+            <p>Je partage un besoin ou une idée</p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num">2</div>
+            <p>Je candidate ou je me positionne</p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num">3</div>
+            <p>Je rencontre les acteurs concernés</p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num">4</div>
+            <p>Je participe à une expérimentation</p>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Connexion — Station T{% endblock %}
+
+{% block contenu %}
+<div class="page-form">
+    <p class="form-title">Connexion</p>
+    <p class="form-subtitle">Accédez à votre espace Station T.</p>
+
+    <div class="form-card">
+        <form method="post" action="{{ route('connecter') }}">
+
+            <div class="form-group">
+                <label for="email">Adresse email</label>
+                <input type="email" id="email" name="email" required autofocus
+                       placeholder="exemple@domaine.fr">
+            </div>
+
+            <div class="form-group">
+                <label for="mot-de-passe">Mot de passe</label>
+                <input type="password" id="mot-de-passe" name="mot-de-passe" required
+                       placeholder="••••••••">
+            </div>
+
+            <div class="form-submit">
+                <button type="submit" class="btn btn-blue">Se connecter</button>
+            </div>
+        </form>
+    </div>
+
+    <p class="form-link">
+        Pas encore de compte ? <a href="{{ route('afficherFormulaireInscription') }}">Créer un compte</a>
+    </p>
+</div>
+{% endblock %}

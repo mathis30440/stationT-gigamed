@@ -1,0 +1,140 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Besoins — Administration{% endblock %}
+
+{% block contenu %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Besoins soumis</h1>
+        <p>{{ besoins|length }} besoin(s) enregistré(s) sur la plateforme</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <a href="{{ route('adminAfficherFormulaireSoumettreBesoins') }}" class="btn btn-blue">+ Besoin</a>
+        {% endif %}
+        <a href="{{ route('adminDashboard') }}" class="btn btn-outline-white">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}" class="admin-nav-active">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Liste des besoins</h2>
+        <span class="admin-card-count">{{ besoins|length }}</span>
+    </div>
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Titre</th>
+                <th>Filière</th>
+                <th>Déposé le</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in besoins %}
+            <tr>
+                <td class="td-id">{{ b.idBesoin }}</td>
+                <td>
+                    <a href="{{ route('adminDetailBesoin', {id: b.idBesoin}) }}" class="tlink">{{ b.titreBesoin }}</a>
+                </td>
+                <td class="td-muted">{{ b.filiere.value }}</td>
+                <td class="td-muted">{{ b.dateDepot|date('d/m/Y') }}</td>
+                <td>
+                    <span class="abadge" style="
+                        {% if b.statutBesoin.value == 'brouillon' %}background:#fef3c7; color:#92400e;
+                        {% elseif b.statutBesoin.value == 'en attente' %}background:#fef9c3; color:#854d0e;
+                        {% elseif b.statutBesoin.value == 'transformé challenge' %}background:#dbeafe; color:#1d4ed8;
+                        {% elseif b.statutBesoin.value == 'transformé AMI' %}background:#d1fae5; color:#065f46;
+                        {% else %}background:#fee2e2; color:#991b1b;{% endif %}">
+                        {{ b.statutBesoin.value }}
+                    </span>
+                </td>
+                <td>
+                    <div class="abtn-row">
+                        {% if b.statutBesoin.value == 'brouillon' and b.idUtilisateur == utilisateur.idUtilisateur %}
+                        <a href="{{ route('adminAfficherFormulaireSoumettreBesoins') ~ '?id=' ~ b.idBesoin }}" class="abtn" style="background:#f59e0b; color:#fff;">Continuer</a>
+                        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+                        <form method="POST" action="{{ route('adminSupprimerBesoin', {id: b.idBesoin}) }}"
+                              onsubmit="return confirm('Supprimer ce brouillon ?')" style="display:inline;">
+                            <button type="submit" class="abtn abtn-red">Supprimer</button>
+                        </form>
+                        {% endif %}
+                        {% else %}
+                        <a href="{{ route('adminDetailBesoin', {id: b.idBesoin}) }}" class="abtn abtn-slate">Voir</a>
+                        {% endif %}
+                        {% if b.statutBesoin.value == 'en attente' %}
+                        <a href="{{ route('adminBesoinVersChallenge', {id: b.idBesoin}) }}" class="abtn abtn-blue">→ Challenge</a>
+                        <a href="{{ route('adminBesoinVersAmi', {id: b.idBesoin}) }}" class="abtn" style="background:#0891b2; color:#fff;">→ AMI</a>
+                        <button type="button" class="abtn abtn-red"
+                                onclick="ouvrirModalRefus('{{ route('adminRefuserBesoin', {id: b.idBesoin}) }}', '{{ b.titreBesoin|e('js') }}')">
+                            Refuser
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr class="admin-empty-row"><td colspan="6">Aucun besoin soumis.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+
+<div id="modal-refus" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:2rem; max-width:480px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,.2);">
+        <h3 style="margin:0 0 .25rem;">Refuser ce besoin</h3>
+        <p id="modal-refus-titre" style="margin:0 0 1.25rem; color:#6b7280; font-size:.95rem;"></p>
+        <form id="form-modal-refus" method="POST" action="">
+            <div class="form-group">
+                <label for="modal-raison">Motif du refus <span class="required">*</span></label>
+                <p style="margin:.25rem 0 .5rem; font-size:.85rem; color:#6b7280;">Ce motif sera visible par l'entreprise concernée.</p>
+                <textarea id="modal-raison" name="raisonRefus" rows="4" required
+                          placeholder="Expliquez brièvement pourquoi ce besoin n'est pas retenu…"
+                          style="width:100%; resize:vertical; box-sizing:border-box;"></textarea>
+            </div>
+            <div style="display:flex; gap:.75rem; margin-top:1rem;">
+                <button type="submit" class="abtn abtn-red">Confirmer le refus</button>
+                <button type="button" class="abtn abtn-slate" onclick="fermerModalRefus()">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function ouvrirModalRefus(action, titre) {
+    var modal = document.getElementById('modal-refus');
+    document.getElementById('form-modal-refus').action = action;
+    document.getElementById('modal-refus-titre').textContent = titre;
+    document.getElementById('modal-raison').value = '';
+    modal.style.display = 'flex';
+}
+function fermerModalRefus() {
+    document.getElementById('modal-refus').style.display = 'none';
+}
+document.getElementById('modal-refus').addEventListener('click', function(e) {
+    if (e.target === this) fermerModalRefus();
+});
+</script>
+
+{% endblock %}

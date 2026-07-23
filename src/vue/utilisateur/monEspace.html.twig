@@ -1,0 +1,441 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Mon espace — Station T{% endblock %}
+
+{% block contenu %}
+
+<section class="hero">
+    <div class="hero-tag">Mon espace</div>
+    <h1>Bonjour, {{ utilisateur.prenomUtilisateur }} {{ utilisateur.nomUtilisateur }}</h1>
+    <p>{{ utilisateur.roleUtilisateur.value|capitalize }} — {{ utilisateur.emailUtilisateur }}</p>
+    <div class="hero-actions">
+        {% if utilisateur.roleUtilisateur.value == 'admin' or utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <a href="{{ route('adminDashboard') }}" class="btn btn-primary">Tableau de bord</a>
+        {% else %}
+        {% if utilisateur.roleUtilisateur.value == 'entreprise' and not hasCandidature %}
+        <a href="{{ route('afficherFormulaireBesoin') }}" class="btn btn-outline-white">Soumettre un besoin</a>
+        {% endif %}
+        {% endif %}
+        <a href="{{ route('afficherFormulaireModification') }}" class="btn btn-outline-white">Modifier mes informations</a>
+    </div>
+</section>
+
+<div class="page-form-wide">
+
+        <div class="form-card">
+        <h2>Mes informations personnelles</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nom complet</label>
+                <p class="info-value">{{ utilisateur.prenomUtilisateur }} {{ utilisateur.nomUtilisateur }}</p>
+            </div>
+            <div class="form-group">
+                <label>Adresse email</label>
+                <p class="info-value">{{ utilisateur.emailUtilisateur }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Téléphone</label>
+                <p class="info-value">{{ utilisateur.telephoneUtilisateur }}</p>
+            </div>
+            <div class="form-group">
+                <label>Fonction / Statut</label>
+                <p class="info-value">{{ utilisateur.statutUtilisateur }}</p>
+            </div>
+        </div>
+    </div>
+
+        {% if structure is not null %}
+
+    <div class="form-card">
+        <h2>Ma structure — {{ structure.nomStructure }}</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Forme juridique</label>
+                <p class="info-value">{{ structure.formeJuridique }}</p>
+            </div>
+            <div class="form-group">
+                <label>SIRET / RNA</label>
+                <p class="info-value">{{ structure.numSIRET_RNA }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Date de création</label>
+                <p class="info-value">{{ structure.dateCreation|date('d/m/Y') }}</p>
+            </div>
+            <div class="form-group">
+                <label>Site web</label>
+                <p class="info-value">{{ structure.siteWeb ?? '—' }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Adresse</label>
+                <p class="info-value">{{ structure.adresseSiege }}, {{ structure.commune }}</p>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <p class="info-value">{{ structure.typeStructure.value|capitalize }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if structure.typeStructure.value == 'startup' %}
+    <div class="form-card">
+        <h2>Informations startup</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Statut actuel</label>
+                <p class="info-value">{{ structure.statutJuridiqueS ? structure.statutJuridiqueS.value|capitalize : '—' }}</p>
+            </div>
+            <div class="form-group">
+                <label>Nombre d'associés / fondateurs</label>
+                <p class="info-value">{{ structure.nombreAssocies ?? '—' }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nombre de salariés</label>
+                <p class="info-value">{{ structure.nombreSalaries ?? '—' }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if structure.typeStructure.value == 'entreprise' %}
+    <div class="form-card">
+        <h2>Informations entreprise</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nature du candidat</label>
+                <p class="info-value">{{ structure.statutJuridiqueE ? structure.statutJuridiqueE.value|capitalize : '—' }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Effectif</label>
+                <p class="info-value">{{ structure.effectif ?? '—' }}</p>
+            </div>
+            <div class="form-group">
+                <label>Chiffre d'affaires (€)</label>
+                <p class="info-value">{{ structure.chiffreAffaires ?? '—' }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Implanté sur le territoire</label>
+                <p class="info-value">{{ structure.implantationTerritoire ? 'Oui' : 'Non' }}</p>
+            </div>
+            <div class="form-group">
+                <label>Implantation envisagée</label>
+                <p class="info-value">{{ structure.implantationEnvisagee ? 'Oui' : 'Non' }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="form-card">
+        <h2>Référent de la structure</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Nom</label>
+                <p class="info-value">{{ structure.referentNom }}</p>
+            </div>
+            <div class="form-group">
+                <label>Fonction</label>
+                <p class="info-value">{{ structure.referentFonction }}</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Email</label>
+                <p class="info-value">{{ structure.referentEmail }}</p>
+            </div>
+            <div class="form-group">
+                <label>Téléphone</label>
+                <p class="info-value">{{ structure.referentTelephone }}</p>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+        {% if utilisateur.roleUtilisateur.value == 'partenaire' %}
+    {% set sColor = {
+        'brouillon':      'background:#fef3c7; color:#92400e;',
+        'déposé':         'background:#dbeafe; color:#1d4ed8;',
+        'recevable':      'background:#d1fae5; color:#065f46;',
+        'incomplet':      'background:#fef9c3; color:#854d0e;',
+        'en instruction': 'background:#ede9fe; color:#5b21b6;',
+        'sélectionné':    'background:#d1fae5; color:#065f46;',
+        'refusé':         'background:#fee2e2; color:#991b1b;'
+    } %}
+    <div class="form-card">
+        <h2>Candidatures à instruire</h2>
+
+        {% set candidaturesAffectees = candidaturesAffectees ?? [] %}
+        {% if candidaturesAffectees is empty %}
+        <div class="empty-state">
+            <p>Aucune candidature ne vous a encore été affectée.</p>
+            <p class="text-muted">L'équipe administration vous affectera des dossiers dès que des candidatures seront disponibles.</p>
+        </div>
+        {% else %}
+        {% set notesParCandidature = notesParCandidature ?? {} %}
+        {% set criteresCounts      = criteresCounts ?? {} %}
+
+        {% set nbComplete = 0 %}
+        {% for c in candidaturesAffectees %}
+            {% set nbCrit = criteresCounts[c.idCandidature] ?? 0 %}
+            {% set nbN    = notesParCandidature[c.idCandidature] is defined ? notesParCandidature[c.idCandidature]|length : 0 %}
+            {% if nbCrit > 0 and nbN >= nbCrit %}{% set nbComplete = nbComplete + 1 %}{% endif %}
+        {% endfor %}
+
+        <div class="flux-steps" style="margin-bottom:1.5rem;">
+            <div class="flux-step"><div class="flux-step-num">{{ candidaturesAffectees|length }}</div><p>Dossiers affectés</p></div>
+            <div class="flux-step"><div class="flux-step-num">{{ nbComplete }}</div><p>Notations complètes</p></div>
+            <div class="flux-step"><div class="flux-step-num">{{ candidaturesAffectees|length - nbComplete }}</div><p>En attente</p></div>
+        </div>
+
+        <div style="overflow-x:auto;">
+        <table class="admin-table" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>Projet</th>
+                    <th>Filière</th>
+                    <th>Statut</th>
+                    <th>Progression</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in candidaturesAffectees %}
+            {% set nbCrit         = criteresCounts[c.idCandidature] ?? 0 %}
+            {% set notesCand      = notesParCandidature[c.idCandidature] ?? {} %}
+            {% set nbNotesSaisies = notesCand|length %}
+            {% set complete       = nbCrit > 0 and nbNotesSaisies >= nbCrit %}
+            <tr>
+                <td><strong>{{ c.nomProjet }}</strong></td>
+                <td style="color:var(--gris-texte); font-size:.88rem;">{{ c.filiereCandidat ?? '—' }}</td>
+                <td>
+                    <span class="ami-tag" style="{{ sColor[c.statutCandidature.value] ?? '' }}">{{ c.statutCandidature.value|capitalize }}</span>
+                </td>
+                <td style="min-width:140px;">
+                    {% if nbCrit > 0 %}
+                    <div style="display:flex; align-items:center; gap:.6rem;">
+                        <div style="flex:1; height:6px; background:var(--gris-moyen); border-radius:3px; overflow:hidden;">
+                            <div style="height:100%; width:{{ ((nbNotesSaisies / nbCrit) * 100)|round }}%;
+                                        background:{% if complete %}#059669{% else %}var(--bleu-moyen){% endif %}; border-radius:3px;"></div>
+                        </div>
+                        <span style="font-size:.78rem; color:var(--gris-texte); white-space:nowrap;">{{ nbNotesSaisies }}/{{ nbCrit }}</span>
+                        {% if complete %}<span class="ami-tag" style="background:#d1fae5; color:#065f46; font-size:.72rem;">✓</span>{% endif %}
+                    </div>
+                    {% else %}—{% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <a href="{{ route('partenaireDetailCandidature', {id: c.idCandidature}) }}"
+                       class="btn btn-outline-white" style="padding:.4rem .9rem; font-size:.84rem; color:var(--bleu-fonce); border-color:var(--bleu-fonce);">
+                        Voir
+                    </a>
+                    {% if c.statutCandidature.value == 'en instruction' %}
+                    <a href="{{ route('partenaireAfficherFormulaireNoter', {id: c.idCandidature}) }}"
+                       class="btn btn-blue" style="padding:.4rem .9rem; font-size:.84rem;">
+                        {% if complete %}Modifier{% elseif nbNotesSaisies > 0 %}Continuer{% else %}Noter{% endif %}
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+        <div class="form-card">
+        <h2>Mes besoins soumis</h2>
+        {% if besoins is empty %}
+        <p style="text-align:center; color:var(--gris-texte); font-size:.9rem;">
+            Vous n'avez pas encore soumis de besoin.
+            <a href="{{ route('afficherFormulaireBesoin') }}" style="color:var(--bleu-moyen); font-weight:600;">Soumettre un besoin →</a>
+        </p>
+        {% else %}
+        <div style="display:flex; flex-direction:column; gap:.85rem;">
+        {% for besoin in besoins %}
+        {% set lien = besoin.statutBesoin.value == 'brouillon' ? (route('afficherFormulaireBesoin') ~ '?id=' ~ besoin.idBesoin) : route('detailBesoin', {id: besoin.idBesoin}) %}
+        <a href="{{ lien }}" style="text-decoration:none; color:inherit; display:block;">
+        <div style="border:1px solid var(--gris-moyen); border-radius:10px; padding:1rem 1.25rem; transition:box-shadow .2s;"
+             onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <div>
+                    <strong style="font-size:.93rem;">{{ besoin.titreBesoin }}</strong>
+                    <p style="color:var(--gris-texte); font-size:.82rem; margin:.2rem 0 0;">{{ besoin.filiere.value|capitalize }}</p>
+                </div>
+                <span class="ami-tag" style="
+                    {% if besoin.statutBesoin.value == 'brouillon' %}background:#fef3c7; color:#92400e;
+                    {% elseif besoin.statutBesoin.value == 'en attente' %}background:#dbeafe; color:#1d4ed8;
+                    {% elseif 'transformé' in besoin.statutBesoin.value %}background:#d1fae5; color:#065f46;
+                    {% else %}background:#fee2e2; color:#991b1b;{% endif %}
+                    white-space:nowrap;">
+                    {{ besoin.statutBesoin.value|capitalize }}
+                </span>
+            </div>
+        </div>
+        </a>
+        {% if besoin.statutBesoin.value == 'brouillon' %}
+        <form method="POST" action="{{ route('supprimerBrouillonBesoin', {id: besoin.idBesoin}) }}"
+              onsubmit="return confirm('Supprimer ce brouillon ?')" style="margin-top:.3rem; text-align:right;">
+            <button type="submit" class="abtn abtn-red">Supprimer le brouillon</button>
+        </form>
+        {% endif %}
+        {% endfor %}
+        </div>
+        <div style="margin-top:1.25rem;">
+            <a href="{{ route('afficherFormulaireBesoin') }}" class="btn btn-blue" style="width:100%; justify-content:center; display:flex;">
+                + Soumettre un nouveau besoin
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+        {% if utilisateur.roleUtilisateur.value == 'entreprise' and utilisateur.roleUtilisateur.value != 'admin' %}
+    <div class="form-card">
+        <h2>Mes besoins soumis</h2>
+
+        {% if hasCandidature %}
+        <p style="color:var(--gris-texte);">Vous avez déposé une candidature. La soumission de besoin est désactivée pour ce compte.</p>
+        {% elseif besoins is empty %}
+        <p style="text-align:center; color:var(--gris-texte); font-size:.9rem;">
+            Vous n'avez pas encore soumis de besoin.
+            <a href="{{ route('afficherFormulaireBesoin') }}" style="color:var(--bleu-moyen); font-weight:600;">Soumettre un besoin →</a>
+        </p>
+        {% else %}
+        {% for besoin in besoins %}
+        {% set lienBesoin = besoin.statutBesoin.value == 'brouillon' ? (route('afficherFormulaireBesoin') ~ '?id=' ~ besoin.idBesoin) : route('detailBesoin', {id: besoin.idBesoin}) %}
+        <div style="{% if not loop.first %}margin-top:1rem;{% endif %}">
+        <a href="{{ lienBesoin }}" style="text-decoration:none; color:inherit; display:block;">
+        <div style="border:1px solid var(--gris-bordure); border-radius:12px; padding:1.25rem; cursor:pointer; transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <div>
+                    <strong>{{ besoin.titreBesoin }}</strong>
+                    {% if besoin.statutBesoin.value == 'brouillon' %}
+                    <p style="color:var(--gris-texte); font-size:.85rem; margin:.25rem 0 0;">{{ besoin.filiere.value|capitalize }} — <em>Brouillon, cliquez pour continuer à compléter</em></p>
+                    {% else %}
+                    <p style="color:var(--gris-texte); font-size:.85rem; margin:.25rem 0 0;">{{ besoin.filiere.value|capitalize }} — déposé le {{ besoin.dateDepot|date('d/m/Y') }}</p>
+                    {% endif %}
+                </div>
+                <span class="ami-tag" style="
+                    {% if besoin.statutBesoin.value == 'brouillon' %}background:#fef3c7; color:#92400e;
+                    {% elseif besoin.statutBesoin.value == 'en attente' %}background:#f0f4ff; color:#2563eb;
+                    {% elseif besoin.statutBesoin.value == 'transformé challenge' %}background:#f0fdf4; color:#16a34a;
+                    {% elseif besoin.statutBesoin.value == 'transformé AMI' %}background:#ecfdf5; color:#059669;
+                    {% else %}background:#fef2f2; color:#dc2626;{% endif %}
+                    white-space:nowrap;">
+                    {{ besoin.statutBesoin.value|capitalize }}
+                </span>
+            </div>
+            {% if besoin.objectifBesoin %}
+            <p style="color:var(--gris-texte); font-size:.9rem; margin-top:.75rem;">{{ besoin.objectifBesoin|slice(0, 150) }}{% if besoin.objectifBesoin|length > 150 %}…{% endif %}</p>
+            {% endif %}
+        </div>
+        </a>
+        {% if besoin.statutBesoin.value == 'brouillon' %}
+        <form method="POST" action="{{ route('supprimerBrouillonBesoin', {id: besoin.idBesoin}) }}"
+              onsubmit="return confirm('Supprimer ce brouillon ?')" style="margin-top:.4rem; text-align:right;">
+            <button type="submit" class="abtn abtn-red">Supprimer le brouillon</button>
+        </form>
+        {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+        {% if utilisateur.roleUtilisateur.value != 'admin' and utilisateur.roleUtilisateur.value != 'superAdmin' and utilisateur.roleUtilisateur.value != 'partenaire' %}
+    <div class="form-card">
+        <h2>Mes candidatures</h2>
+
+        {% if hasBesoin %}
+        <p style="color:var(--gris-texte);">Vous avez soumis un besoin. Vous ne pouvez pas déposer de candidature.</p>
+        {% else %}
+
+        {% set nbDeposees      = candidatures|filter(c => c.statutCandidature.value == 'déposé')|length %}
+        {% set nbInstruction   = candidatures|filter(c => c.statutCandidature.value == 'en instruction')|length %}
+        {% set nbSelectionnees = candidatures|filter(c => c.statutCandidature.value == 'sélectionné')|length %}
+
+        <div class="flux-steps" style="margin-bottom:1.5rem;">
+            <div class="flux-step">
+                <div class="flux-step-num">{{ candidatures|filter(c => c.statutCandidature.value != 'brouillon')|length }}</div>
+                <p>Déposées</p>
+            </div>
+            <div class="flux-step">
+                <div class="flux-step-num">{{ nbInstruction }}</div>
+                <p>En instruction</p>
+            </div>
+            <div class="flux-step">
+                <div class="flux-step-num">{{ nbSelectionnees }}</div>
+                <p>Sélectionnées</p>
+            </div>
+        </div>
+
+        {% if candidatures is empty %}
+        <p style="text-align:center; color:var(--gris-texte); font-size:.9rem;">
+            Vous n'avez pas encore de candidature.
+        </p>
+        {% else %}
+        {% set statutColor = {
+            'brouillon':      '#6b7280',
+            'déposé':         '#2563eb',
+            'éligible':       '#059669',
+            'incomplet':      '#d97706',
+            'en instruction': '#7c3aed',
+            'sélectionné':    '#059669',
+            'refusé':         '#dc2626'
+        } %}
+        {% for c in candidatures %}
+        {% if c.statutCandidature.value == 'brouillon' %}
+            {% set lienCandidature = c.idAmi is not null ? route('afficherFormulaireCandidatureAmi', {idAmi: c.idAmi}) : route('afficherFormulaireCandidatureChallenge', {idChallenge: c.idChallenge}) %}
+        {% else %}
+            {% set lienCandidature = route('detailCandidature', {id: c.idCandidature}) %}
+        {% endif %}
+        <div style="{% if not loop.first %}margin-top:1rem;{% endif %}">
+        <a href="{{ lienCandidature }}" style="text-decoration:none; color:inherit; display:block;">
+        <div style="border:1px solid var(--gris-bordure); border-radius:12px; padding:1.25rem; cursor:pointer; transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem;">
+                <div>
+                    <strong>{{ c.nomProjet }}</strong>
+                    {% if c.statutCandidature.value == 'brouillon' %}
+                    <p style="color:var(--gris-texte); font-size:.85rem; margin:.25rem 0 0;"><em>Brouillon, cliquez pour continuer à compléter</em></p>
+                    {% else %}
+                    <p style="color:var(--gris-texte); font-size:.85rem; margin:.25rem 0 0;">{{ c.filiereCandidat }} — déposée le {{ c.dateDepot|date('d/m/Y') }}</p>
+                    {% endif %}
+                </div>
+                <span class="ami-tag" style="
+                    {% if c.statutCandidature.value == 'brouillon' %}background:#fef3c7; color:#92400e;
+                    {% else %}background:{{ statutColor[c.statutCandidature.value] ?? '#6b7280' }}22; color:{{ statutColor[c.statutCandidature.value] ?? '#6b7280' }};{% endif %}
+                    white-space:nowrap;">
+                    {{ c.statutCandidature.value|capitalize }}
+                </span>
+            </div>
+            <p style="color:var(--gris-texte); font-size:.9rem; margin-top:.75rem;">{{ c.descriptionProjet|slice(0, 150) }}{% if c.descriptionProjet|length > 150 %}…{% endif %}</p>
+        </div>
+        </a>
+        {% if c.statutCandidature.value == 'brouillon' %}
+        <form method="POST" action="{{ route('supprimerBrouillonCandidature', {id: c.idCandidature}) }}"
+              onsubmit="return confirm('Supprimer ce brouillon ?')" style="margin-top:.4rem; text-align:right;">
+            <button type="submit" class="abtn abtn-red">Supprimer le brouillon</button>
+        </form>
+        {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

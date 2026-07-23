@@ -1,0 +1,429 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Affectation des partenaires — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set sColor = {
+    'brouillon':      'background:#fef3c7; color:#92400e;',
+    'déposé':         'background:#dbeafe; color:#1d4ed8;',
+    'recevable':      'background:#d1fae5; color:#065f46;',
+    'incomplet':      'background:#fef9c3; color:#854d0e;',
+    'en instruction': 'background:#ede9fe; color:#5b21b6;',
+    'sélectionné':    'background:#d1fae5; color:#065f46;',
+    'refusé':         'background:#fee2e2; color:#991b1b;'
+} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Affectation des partenaires</h1>
+        <p>Associez des partenaires aux candidatures pour l'instruction des dossiers.</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminCandidatures') }}" class="btn btn-outline-white">← Candidatures</a>
+        <a href="{{ route('adminDashboard') }}" class="btn btn-outline-white">Tableau de bord</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminAffectations') }}" class="admin-nav-active">Affectations</a>
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+
+<div class="admin-stat-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="admin-stat-card admin-stat-blue">
+        <span class="admin-stat-label">Candidatures</span>
+        <span class="admin-stat-num">{{ candidatures|length }}</span>
+        <span class="admin-stat-sub">dossiers soumis</span>
+    </div>
+    <div class="admin-stat-card admin-stat-purple">
+        <span class="admin-stat-label">Partenaires</span>
+        <span class="admin-stat-num">{{ tousPartenaires|length }}</span>
+        <span class="admin-stat-sub">disponibles</span>
+    </div>
+    <div class="admin-stat-card admin-stat-teal">
+        <span class="admin-stat-label">Affectations</span>
+        <span class="admin-stat-num">{{ totalAffectations }}</span>
+        <span class="admin-stat-sub">liaisons actives</span>
+    </div>
+</div>
+
+{% if tousPartenaires is empty %}
+
+<div class="admin-card" style="padding:3rem; text-align:center;">
+    <p style="color:var(--gris-texte); font-size:.95rem; margin-bottom:1.25rem;">
+        Aucun partenaire enregistré. Créez d'abord des utilisateurs avec le rôle <strong>partenaire</strong>.
+    </p>
+    <a href="{{ route('adminAfficherFormulaireCreerUtilisateur') }}" class="btn btn-blue">+ Créer un utilisateur</a>
+</div>
+
+{% elseif candidatures is empty %}
+
+<div class="admin-card" style="padding:3rem; text-align:center;">
+    <p style="color:var(--gris-texte); font-size:.95rem; margin:0;">Aucune candidature soumise pour l'instant.</p>
+</div>
+
+{% else %}
+
+<div class="admin-card" style="padding:1rem 1.5rem; margin-bottom:1.5rem;">
+    <div style="display:flex; align-items:center; gap:.75rem; flex-wrap:wrap;">
+        <div style="position:relative; flex:1; min-width:200px;">
+            <input type="text" id="rechercheAffectation"
+                   placeholder="Rechercher un projet…"
+                   oninput="affFilterAll()"
+                   style="width:100%; padding:.45rem .85rem .45rem 2.2rem;
+                          border:1.5px solid var(--gris-moyen); border-radius:var(--radius);
+                          font-size:.88rem; font-family:inherit; color:var(--texte);
+                          transition:border-color .2s;">
+            <span style="position:absolute; left:.75rem; top:50%; transform:translateY(-50%);
+                         color:#9ca3af; font-size:.9rem; pointer-events:none;">⌕</span>
+        </div>
+        <select id="filtreStatut" class="admin-select" onchange="affFilterAll()">
+            <option value="">Tous les statuts</option>
+            <option value="déposé">Déposé</option>
+            <option value="recevable">Recevable</option>
+            <option value="incomplet">Incomplet</option>
+            <option value="en instruction">En instruction</option>
+            <option value="sélectionné">Sélectionné</option>
+            <option value="refusé">Refusé</option>
+        </select>
+        <select id="filtrePartenaire" class="admin-select" onchange="affFilterAll()">
+            <option value="">Tous les partenaires</option>
+            {% for p in tousPartenaires %}
+            <option value="{{ p.idUtilisateur }}">{{ p.prenomUtilisateur }} {{ p.nomUtilisateur }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" onclick="affReset()"
+                style="padding:.42rem .85rem; background:var(--gris-clair); border:1.5px solid var(--gris-moyen);
+                       border-radius:var(--radius); font-size:.82rem; font-weight:600; cursor:pointer;
+                       color:var(--gris-texte); white-space:nowrap; transition:background .15s;">
+            Réinitialiser
+        </button>
+        <span id="compteurLignes" style="color:var(--gris-texte); font-size:.82rem; white-space:nowrap;
+              background:var(--bleu-clair); color:var(--bleu-moyen); font-weight:700;
+              padding:.25rem .75rem; border-radius:20px;">
+            {{ candidatures|length }}
+        </span>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Candidatures et affectations</h2>
+        <span class="admin-card-count">{{ candidatures|length }} dossier(s)</span>
+    </div>
+    <div class="admin-table-wrap">
+    <table class="admin-table" id="tableAffectations">
+        <thead>
+            <tr>
+                <th style="width:40px;">#</th>
+                <th>Projet</th>
+                <th>AMI / Challenge</th>
+                <th style="width:120px;">Statut</th>
+                <th>Partenaires affectés</th>
+                <th style="width:260px;">Affecter</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in candidatures %}
+        {% set idsAffecter = toutesAffectations[c.idCandidature] ?? [] %}
+        {% set ami = c.idAmi is not null ? (amisParId[c.idAmi] ?? null) : null %}
+        {% set challenge = c.idChallenge is not null ? (challengesParId[c.idChallenge] ?? null) : null %}
+        <tr class="cand-row"
+            data-nom="{{ c.nomProjet|lower }}"
+            data-statut="{{ c.statutCandidature.value }}"
+            data-partenaires="{{ idsAffecter|join(',') }}">
+
+            <td class="td-id">{{ c.idCandidature }}</td>
+
+            <td>
+                <a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="tlink">
+                    {{ c.nomProjet }}
+                </a>
+                {% if c.filiereCandidat %}
+                <div style="color:#9ca3af; font-size:.77rem; margin-top:.1rem;">{{ c.filiereCandidat }}</div>
+                {% endif %}
+            </td>
+
+            <td class="td-muted">
+                {% if ami is not null %}
+                <a href="{{ route('adminDetailAmi', {id: ami.idAmi}) }}"
+                   style="color:#6b7280; font-size:.83rem; text-decoration:underline dotted;">
+                    {{ ami.titreAmi|length > 38 ? ami.titreAmi[:38] ~ '…' : ami.titreAmi }}
+                </a>
+                {% elseif challenge is not null %}
+                <a href="{{ route('adminDetailChallenge', {id: challenge.idChallenge}) }}"
+                   style="color:#6b7280; font-size:.83rem; text-decoration:underline dotted;">
+                    {{ challenge.titreChallenge|length > 38 ? challenge.titreChallenge[:38] ~ '…' : challenge.titreChallenge }}
+                </a>
+                {% else %}
+                <span>—</span>
+                {% endif %}
+            </td>
+
+            <td>
+                <span class="abadge" style="{{ sColor[c.statutCandidature.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+                    {{ c.statutCandidature.value }}
+                </span>
+            </td>
+
+            <td>
+                {% if idsAffecter is not empty %}
+                <div class="chips-wrap">
+                    {% for idP in idsAffecter %}
+                    {% set p = partenairesParId[idP] ?? null %}
+                    {% if p is not null %}
+                    {% set aNote = notesStatus[c.idCandidature][idP] ?? false %}
+                    <div class="pchip-row">
+                        <span class="pchip" title="{{ p.prenomUtilisateur }} {{ p.nomUtilisateur }} · {{ p.emailUtilisateur }}">
+                            <span class="pchip-avatar">{{ p.prenomUtilisateur|slice(0,1) }}{{ p.nomUtilisateur|slice(0,1) }}</span>
+                            <span class="pchip-nom">{{ p.prenomUtilisateur }} {{ p.nomUtilisateur }}</span>
+                            <span class="pchip-note-dot {% if aNote %}pchip-note-ok{% else %}pchip-note-pending{% endif %}"
+                                  title="{% if aNote %}A noté{% else %}N'a pas encore noté{% endif %}"></span>
+                            <form method="POST"
+                                  action="{{ route('adminDesaffecterPartenaire', {id: c.idCandidature, idPartenaire: p.idUtilisateur}) }}"
+                                  style="margin:0; display:inline;"
+                                  onsubmit="return confirm('Retirer {{ p.prenomUtilisateur }} {{ p.nomUtilisateur }} de ce dossier ?')">
+                                <button type="submit" class="pchip-remove" title="Retirer">×</button>
+                            </form>
+                        </span>
+                        {% if not aNote %}
+                        <form method="POST"
+                              action="{{ route('adminRelancerPartenaire', {id: c.idCandidature, idPartenaire: p.idUtilisateur}) }}"
+                              style="margin:0;"
+                              onsubmit="return confirm('Envoyer un mail de relance à {{ p.prenomUtilisateur }} {{ p.nomUtilisateur }} ?')">
+                            <button type="submit" class="pchip-relance" title="Relancer par email">↩ Relancer</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <span style="color:#d1d5db; font-size:.82rem; font-style:italic;">Aucun</span>
+                {% endif %}
+            </td>
+
+            <td>
+                {% set disponibles = tousPartenaires|filter(p => p.idUtilisateur not in idsAffecter) %}
+                {% if disponibles is not empty %}
+                <form method="POST" action="{{ route('adminAffecterPartenaire', {id: c.idCandidature}) }}"
+                      class="aff-form">
+                    <select name="idPartenaire" class="admin-select aff-select">
+                        {% for p in disponibles %}
+                        <option value="{{ p.idUtilisateur }}">{{ p.prenomUtilisateur }} {{ p.nomUtilisateur }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="abtn abtn-blue aff-btn">+ Affecter</button>
+                </form>
+                {% else %}
+                <span class="abadge" style="background:#d1fae5; color:#065f46;">Complet</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr class="admin-empty-row"><td colspan="6">Aucune candidature soumise.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Récapitulatif par partenaire</h2>
+        <span class="admin-card-count">{{ tousPartenaires|length }} partenaire(s)</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem; padding:1.25rem 1.5rem;">
+        {% for p in tousPartenaires %}
+        {% set nbAffectations = 0 %}
+        {% for idCand, ids in toutesAffectations %}
+            {% if p.idUtilisateur in ids %}{% set nbAffectations = nbAffectations + 1 %}{% endif %}
+        {% endfor %}
+        <div style="display:flex; align-items:center; gap:.85rem; padding:1rem 1.25rem;
+                    background:var(--gris-clair); border-radius:10px;
+                    border:1.5px solid {% if nbAffectations > 0 %}#c4b5fd{% else %}var(--gris-moyen){% endif %};">
+            <div style="width:44px; height:44px; border-radius:50%; flex-shrink:0;
+                        background:linear-gradient(135deg, var(--bleu-fonce), var(--bleu-moyen));
+                        color:#fff; font-size:.95rem; font-weight:800;
+                        display:flex; align-items:center; justify-content:center;
+                        text-transform:uppercase; box-shadow:0 3px 8px rgba(0,40,110,.2);">
+                {{ p.prenomUtilisateur|slice(0,1) }}{{ p.nomUtilisateur|slice(0,1) }}
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-weight:700; font-size:.92rem; color:var(--bleu-fonce); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ p.prenomUtilisateur }} {{ p.nomUtilisateur }}
+                </div>
+                <div style="font-size:.78rem; color:var(--gris-texte); margin-top:.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ p.emailUtilisateur }}
+                </div>
+            </div>
+            <div style="text-align:center; flex-shrink:0;">
+                <span style="display:block; font-size:1.4rem; font-weight:900; line-height:1;
+                             color:{% if nbAffectations > 0 %}#5b21b6{% else %}#d1d5db{% endif %};">
+                    {{ nbAffectations }}
+                </span>
+                <span style="font-size:.7rem; font-weight:700; text-transform:uppercase;
+                             letter-spacing:.06em; color:var(--gris-texte);">dossier(s)</span>
+            </div>
+        </div>
+        {% else %}
+        <p style="color:var(--gris-texte); grid-column:1/-1; text-align:center; padding:1rem 0;">
+            Aucun partenaire disponible.
+        </p>
+        {% endfor %}
+    </div>
+</div>
+
+{% endif %}
+
+</div>
+<style>
+/* ---- Chips partenaires ---- */
+.chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+}
+.pchip {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    background: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+    border-radius: 20px;
+    padding: .18rem .45rem .18rem .22rem;
+    font-size: .78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    max-width: 200px;
+}
+.pchip-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #5b21b6;
+    color: #fff;
+    font-size: .62rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+.pchip-nom {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+}
+.pchip-remove {
+    background: none;
+    border: none;
+    color: #7c3aed;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 .05rem;
+    line-height: 1;
+    opacity: .55;
+    transition: opacity .15s, transform .15s;
+    flex-shrink: 0;
+}
+.pchip-remove:hover { opacity: 1; transform: scale(1.2); }
+.pchip-row {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+}
+.pchip-note-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.pchip-note-ok   { background: #16a34a; }
+.pchip-note-pending { background: #d97706; }
+.pchip-relance {
+    background: none;
+    border: 1px solid #d97706;
+    color: #d97706;
+    border-radius: 20px;
+    padding: .1rem .45rem;
+    font-size: .72rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, color .15s;
+}
+.pchip-relance:hover { background: #d97706; color: #fff; }
+
+/* ---- Formulaire d'affectation inline ---- */
+.aff-form {
+    display: flex;
+    gap: .4rem;
+    align-items: center;
+}
+.aff-select {
+    font-size: .8rem;
+    flex: 1;
+    min-width: 0;
+    max-width: 170px;
+}
+.aff-btn {
+    padding: .28rem .6rem;
+    font-size: .78rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---- Focus sur les inputs de filtre ---- */
+#rechercheAffectation:focus {
+    outline: none;
+    border-color: var(--bleu-moyen);
+    box-shadow: 0 0 0 3px rgba(0,87,184,.1);
+}
+</style>
+
+<script>
+function affFilterAll() {
+    var recherche = document.getElementById('rechercheAffectation').value.toLowerCase().trim();
+    var statutFiltre = document.getElementById('filtreStatut').value;
+    var partenaireFiltre = document.getElementById('filtrePartenaire').value;
+    var rows = document.querySelectorAll('.cand-row');
+    var visible = 0;
+    rows.forEach(function(row) {
+        var nom = row.dataset.nom || '';
+        var statut = row.dataset.statut || '';
+        var partenaires = row.dataset.partenaires ? row.dataset.partenaires.split(',') : [];
+        var ok = true;
+        if (recherche && !nom.includes(recherche)) ok = false;
+        if (statutFiltre && statut !== statutFiltre) ok = false;
+        if (partenaireFiltre && !partenaires.includes(partenaireFiltre)) ok = false;
+        row.style.display = ok ? '' : 'none';
+        if (ok) visible++;
+    });
+    document.getElementById('compteurLignes').textContent = visible;
+}
+
+function affReset() {
+    document.getElementById('rechercheAffectation').value = '';
+    document.getElementById('filtreStatut').value = '';
+    document.getElementById('filtrePartenaire').value = '';
+    affFilterAll();
+}
+</script>
+
+{% endblock %}

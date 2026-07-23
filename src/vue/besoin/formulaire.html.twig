@@ -1,0 +1,224 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isAdmin = isAdmin ?? false %}
+{% set isModification = isAdmin and besoin is defined and besoin is not null %}
+
+{% block titre %}
+    {% if isModification %}Modifier le besoin — Administration
+    {% elseif isAdmin %}Soumettre un besoin (Administration)
+    {% else %}Soumettre un besoin — Station T
+    {% endif %}
+{% endblock %}
+
+{% block contenu %}
+
+{% if not isAdmin %}
+        {% if brouillon is defined and brouillon is not null and ancien is not defined %}
+    {% set v = {
+        'titreBesoin': brouillon.titreBesoin,
+        'filiere': brouillon.filiere.value,
+        'objectifBesoin': brouillon.objectifBesoin,
+        'publicVise': brouillon.publicVise,
+        'perimetrePrioritaire': brouillon.perimetrePrioritaire,
+        'vision': brouillon.vision,
+        'enjeuxMajeurs': brouillon.enjeuxMajeurs,
+        'besoinsPrioritaires': brouillon.besoinsPrioritaires,
+        'exemplesInnovations': brouillon.exemplesInnovations,
+        'partenaires': brouillon.partenaires,
+    } %}
+    {% else %}
+    {% set v = ancien ?? {} %}
+    {% endif %}
+{% else %}
+    {% set v = ancien ?? {} %}
+{% endif %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration{% if isModification %} — Modification{% else %} — Saisie{% endif %}</span>
+        <h1>{% if isModification %}Modifier le besoin{% else %}Soumettre un besoin{% endif %}</h1>
+        <p>{% if isModification %}{{ besoin.titreBesoin }}{% else %}Saisissez les informations du besoin. Vous pouvez le lier à un utilisateur existant ou le rattacher à votre compte.{% endif %}</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if isModification %}
+        <a href="{{ route('adminDetailBesoin', {id: besoin.idBesoin}) }}" class="btn btn-outline-white">← Retour au besoin</a>
+        {% else %}
+        <a href="{{ route('adminBesoins') }}" class="btn btn-outline-white">← Retour aux besoins</a>
+        {% endif %}
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}" class="admin-nav-active">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Mon espace</div>
+    <h1>Soumettre un besoin</h1>
+    <p>Décrivez votre besoin d'innovation. Notre équipe l'analysera et vous recontactera.</p>
+    <div class="hero-actions">
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Retour</a>
+    </div>
+</section>
+{% endif %}
+
+{% if not isAdmin and brouillon is defined and brouillon is not null and ancien is not defined %}
+<div class="page-form-wide" style="padding-top:0; padding-bottom:0;">
+    <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:.85rem 1.25rem; color:#92400e; font-size:.9rem;">
+        Vous avez un brouillon enregistré. Les champs ci-dessous ont été préremplis. Complétez-les et soumettez votre besoin.
+    </div>
+</div>
+{% endif %}
+
+<div class="page-form-wide">
+
+    <form method="POST" action="{% if isModification %}{{ route('adminModifierBesoin', {id: besoin.idBesoin}) }}{% elseif isAdmin %}{{ route('adminSoumettreBesoins') }}{% else %}{{ route('soumettresBesoin') }}{% endif %}">
+        {% if not isAdmin and brouillon is defined and brouillon is not null %}
+        <input type="hidden" name="idBesoin" value="{{ brouillon.idBesoin }}">
+        {% elseif isAdmin and not isModification and idBrouillon is defined and idBrouillon is not null %}
+        <input type="hidden" name="idBesoin" value="{{ idBrouillon }}">
+        {% endif %}
+
+                {% if isModification %}
+        <div class="form-card">
+            <h2>Statut</h2>
+            <div class="form-group">
+                <label for="statutBesoin">Statut du besoin <span class="required">*</span></label>
+                <select id="statutBesoin" name="statutBesoin" required>
+                    <option value="en attente"           {% if (v.statutBesoin ?? besoin.statutBesoin.value) == 'en attente' %}selected{% endif %}>En attente</option>
+                    <option value="transformé challenge" {% if (v.statutBesoin ?? besoin.statutBesoin.value) == 'transformé challenge' %}selected{% endif %}>Transformé challenge</option>
+                    <option value="transformé AMI"       {% if (v.statutBesoin ?? besoin.statutBesoin.value) == 'transformé AMI' %}selected{% endif %}>Transformé AMI</option>
+                    <option value="refusé"               {% if (v.statutBesoin ?? besoin.statutBesoin.value) == 'refusé' %}selected{% endif %}>Refusé</option>
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+                {% if isAdmin and not isModification %}
+        <div class="form-card">
+            <h2>Utilisateur concerné</h2>
+            <div class="form-group">
+                <label for="idUtilisateur">Utilisateur <span class="optional">(optionnel — laisser vide pour lier au superAdmin connecté)</span></label>
+                <select id="idUtilisateur" name="idUtilisateur">
+                    <option value="0">— Lier à moi-même (SuperAdmin) —</option>
+                    {% for u in utilisateurs %}
+                    <option value="{{ u.idUtilisateur }}" {% if (v.idUtilisateur ?? '') == u.idUtilisateur %}selected{% endif %}>
+                        {{ u.prenomUtilisateur }} {{ u.nomUtilisateur }} — {{ u.emailUtilisateur }} ({{ u.roleUtilisateur.value }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+                <div class="form-card">
+            <h2>1. Identification du besoin</h2>
+            <div class="form-group">
+                <label for="titreBesoin">Titre du besoin <span class="required">*</span></label>
+                <input type="text" id="titreBesoin" name="titreBesoin"
+                       value="{{ v.titreBesoin ?? (isModification ? besoin.titreBesoin : '') }}" required
+                       placeholder="Ex : Optimisation de l'accueil touristique">
+            </div>
+            <div class="form-group">
+                <label for="filiere">Filière concernée <span class="required">*</span></label>
+                <select id="filiere" name="filiere" required>
+                    <option value="">— Sélectionnez —</option>
+                    {% set filiereActive = v.filiere ?? (isModification ? besoin.filiere.value : '') %}
+                    <option value="tourisme"    {% if filiereActive == 'tourisme' %}selected{% endif %}>Tourisme balnéaire &amp; durable</option>
+                    <option value="nautisme"    {% if filiereActive == 'nautisme' %}selected{% endif %}>Nautisme, plaisance &amp; fluvial</option>
+                    <option value="commerce"    {% if filiereActive == 'commerce' %}selected{% endif %}>Commerce &amp; artisanat</option>
+                    <option value="agriculture" {% if filiereActive == 'agriculture' %}selected{% endif %}>Agriculture &amp; viticulture</option>
+                    <option value="sport"       {% if filiereActive == 'sport' %}selected{% endif %}>Sport, bien-être &amp; loisirs</option>
+                    <option value="ville"       {% if filiereActive == 'ville' %}selected{% endif %}>Ville de demain &amp; services de proximité</option>
+                </select>
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>2. Description du besoin</h2>
+            <div class="form-group">
+                <label for="objectifBesoin">Objectif principal <span class="required">*</span></label>
+                <p class="form-hint">Quel résultat souhaitez-vous atteindre grâce à une solution innovante ?</p>
+                <textarea id="objectifBesoin" name="objectifBesoin" rows="3" required
+                          placeholder="Quel est l'objectif visé ?">{{ v.objectifBesoin ?? (isModification ? besoin.objectifBesoin : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="publicVise">Public visé <span class="required">*</span></label>
+                <textarea id="publicVise" name="publicVise" rows="2" required
+                          placeholder="Qui est concerné par ce besoin ?">{{ v.publicVise ?? (isModification ? besoin.publicVise : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="perimetrePrioritaire">Périmètre prioritaire <span class="required">*</span></label>
+                <p class="form-hint">Zone géographique ou secteur d'activité prioritaire.</p>
+                <textarea id="perimetrePrioritaire" name="perimetrePrioritaire" rows="2" required
+                          placeholder="Zone géographique ou secteur prioritaire">{{ v.perimetrePrioritaire ?? (isModification ? besoin.perimetrePrioritaire : '') }}</textarea>
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>3. Contexte &amp; Enjeux</h2>
+            <div class="form-group">
+                <label for="vision">Vision à long terme <span class="required">*</span></label>
+                <p class="form-hint">Où voulez-vous en être dans 3 à 5 ans ?</p>
+                <textarea id="vision" name="vision" rows="3" required
+                          placeholder="Où voulez-vous en être dans 3 à 5 ans ?">{{ v.vision ?? (isModification ? besoin.vision : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="enjeuxMajeurs">Enjeux majeurs <span class="required">*</span></label>
+                <p class="form-hint">Quels sont les défis ou contraintes clés auxquels vous faites face ?</p>
+                <textarea id="enjeuxMajeurs" name="enjeuxMajeurs" rows="3" required
+                          placeholder="Quels sont les enjeux clés auxquels vous faites face ?">{{ v.enjeuxMajeurs ?? (isModification ? besoin.enjeuxMajeurs : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="besoinsPrioritaires">Besoins prioritaires <span class="required">*</span></label>
+                <p class="form-hint">Quelles solutions ou fonctionnalités sont les plus urgentes pour vous ?</p>
+                <textarea id="besoinsPrioritaires" name="besoinsPrioritaires" rows="3" required
+                          placeholder="Quelles solutions ou fonctionnalités sont les plus urgentes ?">{{ v.besoinsPrioritaires ?? (isModification ? besoin.besoinsPrioritaires : '') }}</textarea>
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>4. Pistes d'innovation</h2>
+            <div class="form-group">
+                <label for="exemplesInnovations">Exemples d'innovations souhaitées <span class="required">*</span></label>
+                <p class="form-hint">Quels types de solutions innovantes imaginez-vous pour répondre à ce besoin ?</p>
+                <textarea id="exemplesInnovations" name="exemplesInnovations" rows="3" required
+                          placeholder="Quelles types de solutions innovantes imaginez-vous ?">{{ v.exemplesInnovations ?? (isModification ? besoin.exemplesInnovations : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="partenaires">Partenaires potentiels <span class="optional">(optionnel)</span></label>
+                <p class="form-hint">Y a-t-il des structures, entreprises ou acteurs locaux déjà identifiés ?</p>
+                <textarea id="partenaires" name="partenaires" rows="2"
+                          placeholder="Y a-t-il des partenaires déjà identifiés ?">{{ v.partenaires ?? (isModification ? besoin.partenaires : '') }}</textarea>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+            {% if isModification %}
+            <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+            <a href="{{ route('adminDetailBesoin', {id: besoin.idBesoin}) }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+            {% elseif isAdmin %}
+            <button type="submit" name="action" value="soumettre" class="btn btn-blue" style="flex:1; justify-content:center;">Soumettre le besoin</button>
+            <button type="submit" name="action" value="brouillon" formnovalidate class="btn" style="background:#f59e0b; color:#fff; border:none; white-space:nowrap;">Sauvegarder en brouillon</button>
+            <a href="{{ route('adminBesoins') }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+            {% else %}
+            <button type="submit" name="action" value="soumettre" class="btn btn-blue" style="flex:1; justify-content:center;">Soumettre mon besoin</button>
+            <button type="submit" name="action" value="brouillon" formnovalidate class="btn" style="background:#f59e0b; color:#fff; border:none; white-space:nowrap;">Sauvegarder en brouillon</button>
+            <a href="{{ route('monEspace') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+            {% endif %}
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

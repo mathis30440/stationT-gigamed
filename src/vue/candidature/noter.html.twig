@@ -1,0 +1,207 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isAdmin = isAdmin ?? false %}
+
+{% block titre %}Notation — {{ candidature.nomProjet }}{% if isAdmin %} — Administration{% endif %}{% endblock %}
+
+{% block contenu %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Notation</span>
+        <h1>{{ candidature.nomProjet }}</h1>
+        <p>
+            {% if ami is defined and ami is not null %}AMI : {{ ami.titreAmi }}
+            {% elseif challenge is defined and challenge is not null %}Challenge : {{ challenge.titreChallenge }}
+            {% endif %}
+            {% if candidature.filiereCandidat %}&nbsp;·&nbsp; {{ candidature.filiereCandidat }}{% endif %}
+        </p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminDetailCandidature', {id: candidature.idCandidature}) }}" class="btn btn-outline-white">← Retour à la candidature</a>
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}" class="admin-nav-active">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Notation · Partenaire</div>
+    <h1>{{ candidature.nomProjet }}</h1>
+    <p>
+        {% if ami is defined and ami is not null %}AMI : {{ ami.titreAmi }}
+        {% elseif challenge is defined and challenge is not null %}Challenge : {{ challenge.titreChallenge }}
+        {% endif %}
+        {% if candidature.filiereCandidat %}&nbsp;·&nbsp; {{ candidature.filiereCandidat }}{% endif %}
+    </p>
+    <div class="hero-actions">
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Mon espace</a>
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+{% if criteres is empty %}
+<div class="form-card" style="text-align:center; color:var(--gris-texte); padding:2.5rem;">
+    <p>Aucun critère de notation n'est défini pour cet AMI / challenge.</p>
+    <p style="font-size:.85rem; margin-top:.5rem;">{% if isAdmin %}Configurez les critères depuis la gestion des AMI.{% else %}Contactez l'administration pour configurer les critères.{% endif %}</p>
+</div>
+{% else %}
+
+<div class="form-card" style="padding:1.5rem 2rem;">
+    <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+        {% if candidature.pitchCourt %}
+        <div style="flex:1; min-width:200px;">
+            <span style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--gris-texte);">Pitch</span>
+            <p style="margin:.35rem 0 0; font-size:.92rem; color:var(--texte); line-height:1.6;">{{ candidature.pitchCourt }}</p>
+        </div>
+        {% endif %}
+        {% if candidature.descriptionProjet is defined and candidature.descriptionProjet %}
+        <div style="flex:2; min-width:260px;">
+            <span style="font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--gris-texte);">Solution proposée</span>
+            <p style="margin:.35rem 0 0; font-size:.92rem; color:var(--texte); line-height:1.6;">
+                {{ candidature.descriptionProjet|slice(0, 280) }}{% if candidature.descriptionProjet|length > 280 %}…{% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<form method="POST" action="{{ isAdmin ? route('adminNoterCandidature', {id: candidature.idCandidature}) : route('partenaireNoterCandidature', {id: candidature.idCandidature}) }}">
+
+{% set ponderationTotale = 0 %}
+{% for critere in criteres %}{% set ponderationTotale = ponderationTotale + critere.ponderation %}{% endfor %}
+
+{% for critere in criteres %}
+{% set noteExistante = notes[critere.idCritere] ?? null %}
+{% set valeurActuelle = noteExistante is not null ? noteExistante.valeur : 0 %}
+
+<div class="form-card critere-bloc" id="bloc-{{ critere.idCritere }}">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+        <div>
+            <h2 style="margin:0 0 .3rem; font-size:1rem;">{{ critere.libelle }}</h2>
+            <span style="font-size:.78rem; color:var(--gris-texte);">
+                Pondération : <strong>{{ critere.ponderation }}</strong>
+                ({{ ((critere.ponderation / ponderationTotale) * 100)|round(1) }} % du score final)
+            </span>
+            {% if isAdmin and critere.commentaire is defined and critere.commentaire %}
+            <p style="margin:.5rem 0 0; font-size:.82rem; color:var(--gris-texte); font-style:italic;">{{ critere.commentaire }}</p>
+            {% endif %}
+        </div>
+        <div class="note-affichage" id="affichage-{{ critere.idCritere }}"
+             style="min-width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+                    font-size:1.5rem; font-weight:900; border:3px solid var(--gris-moyen); color:var(--gris-texte);
+                    background:var(--gris-clair); transition:all .2s; flex-shrink:0;">
+            {{ valeurActuelle > 0 ? valeurActuelle : '—' }}
+        </div>
+    </div>
+
+        <div style="margin-bottom:1.25rem;">
+        <div style="display:flex; justify-content:space-between; font-size:.75rem; color:var(--gris-texte); margin-bottom:.4rem;">
+            <span>1 — Insuffisant</span>
+            <span>5 — Correct</span>
+            <span>10 — Excellent</span>
+        </div>
+        <input type="range" name="note[{{ critere.idCritere }}]"
+               min="1" max="10" step="1"
+               value="{{ valeurActuelle > 0 ? valeurActuelle : 5 }}"
+               id="range-{{ critere.idCritere }}"
+               data-id="{{ critere.idCritere }}"
+               oninput="majNote({{ critere.idCritere }}, this.value)"
+               style="width:100%; accent-color:var(--bleu-moyen); cursor:pointer; height:6px;">
+        <div style="display:flex; justify-content:space-between; margin-top:.3rem;">
+            {% for i in 1..10 %}
+            <span style="font-size:.72rem; color:var(--gris-texte); font-weight:{% if i == valeurActuelle %}700{% else %}400{% endif %};">{{ i }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+        <div>
+        <label style="font-size:.82rem; font-weight:600; color:var(--bleu-fonce); display:block; margin-bottom:.4rem;">
+            Commentaire <span style="font-weight:400; color:var(--gris-texte);">(optionnel)</span>
+        </label>
+        <textarea name="commentaire[{{ critere.idCritere }}]" rows="3"
+                  placeholder="Justifiez votre note, points forts, points faibles…"
+                  style="width:100%; padding:.65rem .9rem; border:1.5px solid var(--gris-moyen);
+                         border-radius:var(--radius); font-size:.9rem; font-family:inherit;
+                         color:var(--texte); resize:vertical; transition:border-color .2s;">{{ noteExistante is not null ? noteExistante.commentaire : '' }}</textarea>
+    </div>
+</div>
+{% endfor %}
+
+<div class="form-card" style="background:linear-gradient(135deg,#f0f4ff,#e8eeff); border:1.5px solid #c7d2fe;">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <p style="font-weight:700; color:var(--bleu-fonce); margin:0 0 .3rem;">{{ criteres|length }} critère(s) à noter</p>
+            <p style="font-size:.85rem; color:var(--gris-texte); margin:0;">
+                Score pondéré = Σ(note × pondération) / {{ ponderationTotale }}
+            </p>
+        </div>
+        <div style="display:flex; gap:.75rem; flex-wrap:wrap;">
+            {% if isAdmin %}
+            <a href="{{ route('adminDetailCandidature', {id: candidature.idCandidature}) }}" class="btn btn-outline-white"
+               style="color:var(--bleu-fonce); border-color:var(--bleu-fonce);">Annuler</a>
+            {% else %}
+            <a href="{{ route('monEspace') }}" class="btn btn-outline-white"
+               style="color:var(--bleu-fonce); border-color:var(--bleu-fonce);">Annuler</a>
+            {% endif %}
+            <button type="submit" class="btn btn-blue" style="padding:.75rem 2rem;">
+                Enregistrer {% if isAdmin %}les{% else %}mes{% endif %} notes
+            </button>
+        </div>
+    </div>
+</div>
+
+</form>
+{% endif %}
+
+</div>
+<script>
+var couleurs = {
+    1:  { bg:'#fee2e2', border:'#dc2626', text:'#991b1b' },
+    2:  { bg:'#fee2e2', border:'#dc2626', text:'#991b1b' },
+    3:  { bg:'#fef3c7', border:'#d97706', text:'#92400e' },
+    4:  { bg:'#fef3c7', border:'#d97706', text:'#92400e' },
+    5:  { bg:'#fef9c3', border:'#ca8a04', text:'#854d0e' },
+    6:  { bg:'#ecfdf5', border:'#059669', text:'#065f46' },
+    7:  { bg:'#d1fae5', border:'#059669', text:'#065f46' },
+    8:  { bg:'#d1fae5', border:'#059669', text:'#065f46' },
+    9:  { bg:'#ede9fe', border:'#7c3aed', text:'#5b21b6' },
+    10: { bg:'#ede9fe', border:'#7c3aed', text:'#4c1d95' },
+};
+
+function majNote(idCritere, valeur) {
+    var v = parseInt(valeur);
+    var el = document.getElementById('affichage-' + idCritere);
+    if (!el) return;
+    el.textContent = v;
+    var c = couleurs[v] || {};
+    el.style.background    = c.bg     || '#f3f4f6';
+    el.style.borderColor   = c.border || '#d1d5db';
+    el.style.color         = c.text   || '#374151';
+}
+
+document.querySelectorAll('input[type="range"]').forEach(function(r) {
+    var id = parseInt(r.dataset.id);
+    var v  = parseInt(r.value);
+    {% for critere in criteres %}
+    {% set noteExistante = notes[critere.idCritere] ?? null %}
+    if (id === {{ critere.idCritere }} && {{ noteExistante is not null ? noteExistante.valeur : 0 }} > 0) {
+        majNote(id, v);
+    }
+    {% endfor %}
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Tableau de bord — Administration{% endblock %}
+
+{% block contenu %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Tableau de bord</h1>
+        <p>Bienvenue, {{ utilisateur.prenomUtilisateur }}. Vue d'ensemble de la plateforme Station T.</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">Mon espace</a>
+        <a href="{{ route('adminJournal') }}" class="btn btn-outline-white">Journal d'activité</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}" class="admin-nav-active">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+
+        <div class="admin-stat-grid">
+
+        <a href="{{ route('adminUtilisateurs') }}" class="admin-stat-card admin-stat-blue">
+            <span class="admin-stat-label">Utilisateurs</span>
+            <span class="admin-stat-num">{{ nbUtilisateurs }}</span>
+            <span class="admin-stat-sub">comptes enregistrés</span>
+        </a>
+
+        <a href="{{ route('adminBesoins') }}" class="admin-stat-card admin-stat-amber">
+            <span class="admin-stat-label">Besoins</span>
+            <span class="admin-stat-num">{{ nbBesoinsEnAttente }}</span>
+            <span class="admin-stat-sub">en attente de traitement</span>
+        </a>
+
+        <a href="{{ route('adminCandidatures') }}" class="admin-stat-card admin-stat-purple">
+            <span class="admin-stat-label">Candidatures</span>
+            <span class="admin-stat-num">{{ nbCandidaturesDeposees }}</span>
+            <span class="admin-stat-sub">déposées en cours</span>
+        </a>
+
+        <a href="{{ route('adminAmi') }}" class="admin-stat-card admin-stat-teal">
+            <span class="admin-stat-label">AMI</span>
+            <span class="admin-stat-num">{{ nbAmiOuverts }}</span>
+            <span class="admin-stat-sub">ouverts actuellement</span>
+        </a>
+
+    </div>
+
+        <div class="admin-card">
+        <div class="admin-card-head">
+            <h2>Activité récente</h2>
+            <a href="{{ route('adminJournal') }}" class="admin-card-link">Voir tout le journal →</a>
+        </div>
+
+        {% if entrees is empty %}
+        <p style="padding:2.5rem; text-align:center; color:#9ca3af;">Aucune activité enregistrée.</p>
+        {% else %}
+        <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Date / Heure</th>
+                    <th>Utilisateur</th>
+                    <th>Action</th>
+                    <th>Détail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in entrees %}
+                {% set act = e.journal.action|lower %}
+                <tr>
+                    <td class="td-muted" style="white-space:nowrap;">{{ e.journal.horodatage|date('d/m/Y H:i') }}</td>
+                    <td style="font-weight:600;">{{ e.nomComplet ?: '#' ~ e.journal.idUtilisateur }}</td>
+                    <td>
+                        <span class="abadge
+                            {% if 'connexion' in act %}jbadge-connexion
+                            {% elseif 'inscription' in act %}jbadge-inscription
+                            {% elseif 'candidat' in act %}jbadge-candidature
+                            {% elseif 'besoin' in act %}jbadge-besoin
+                            {% elseif 'admin' in act or 'supprim' in act or 'rôle' in act %}jbadge-admin
+                            {% else %}jbadge-default{% endif %}">
+                            {{ e.journal.action }}
+                        </span>
+                    </td>
+                    <td class="td-muted">{{ e.journal.objet }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

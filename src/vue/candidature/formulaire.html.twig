@@ -1,0 +1,1799 @@
+{% extends 'base/base.html.twig' %}
+{% set isAdmin = isAdmin ?? false %}
+{% set isModification = isAdmin and candidature is defined and candidature is not null %}
+
+{% block titre %}{% if isModification %}Modifier la candidature — Administration{% elseif isAdmin %}Soumettre une candidature — Administration{% else %}Candidature — Station T{% endif %}{% endblock %}
+
+{% block contenu %}
+
+{% set c = isModification ? candidature : null %}
+{% set v = ancien ?? {} %}
+{% set isEntreprise = false %}
+{% set action = '' %}
+
+{% macro docActuel(doc, inputId, required) %}
+    {% if doc is not null %}
+    <div id="doc-current-{{ inputId }}" style="display:flex; align-items:center; gap:.75rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:.4rem .75rem; margin-bottom:.4rem;">
+        <span style="color:#047857; font-size:.88rem;">✓ Fichier joint</span>
+        <button type="button" data-input="{{ inputId }}" data-required="{{ required ? '1' : '0' }}"
+                onclick="supprimerDoc({{ doc.idDocument }}, '{{ route('supprimerDocument', {idDoc: doc.idDocument}) }}', this)"
+                class="abtn abtn-red" style="padding:.2rem .55rem; font-size:.78rem; margin-left:auto;">Supprimer</button>
+    </div>
+    {% endif %}
+{% endmacro %}
+
+{% if not isAdmin %}
+    {% if brouillon is not null and ancien is not defined %}
+    {% set v = {
+        'nomProjet': brouillon.nomProjet,
+        'entreeStationT': brouillon.entreeStationT.value,
+        'filiereCandidat': brouillon.filiereCandidat,
+        'besoinTraite': brouillon.besoinTraite,
+        'descriptionProjet': brouillon.descriptionProjet,
+        'valeurAjoutee': brouillon.valeurAjoutee,
+        'innovationDifferentiation': brouillon.innovationDifferentiation,
+        'maturite': brouillon.maturite.value,
+        'references': brouillon.references,
+        'objectifPilote': brouillon.objectifPilote,
+        'perimetreGeographique': brouillon.perimetreGeographique,
+        'dureeExperimentation': brouillon.dureeExperimentation,
+        'publicsCibles': brouillon.publicsCibles,
+        'budgetMobiliser': brouillon.budgetMobiliser,
+        'moyensMobiliser': brouillon.moyensMobiliser,
+        'conditionsReussite': brouillon.conditionsReussite,
+        'derouteOperationnel': brouillon.derouteOperationnel,
+        'partenairesRecherches': brouillon.partenairesRecherches,
+        'modelEconomique': brouillon.modelEconomique,
+        'conditionsDeploiement': brouillon.conditionsDeploiement,
+        'impactAttendu': brouillon.impactAttendu,
+        'pitchCourt': brouillon.pitchCourt,
+        'problemeIdentifie': brouillon.problemeIdentifie,
+        'concurrence': brouillon.concurrence,
+        'clientsCibles': brouillon.clientsCibles,
+        'preuvesBesoin': brouillon.preuvesBesoin,
+        'etatAvancement': brouillon.etatAvancement,
+        'besoinsFinanciers': brouillon.besoinsFinanciers,
+        'equipe': brouillon.equipe,
+        'forcesEquipe': brouillon.forcesEquipe,
+        'programmeGigamed': brouillon.programmeGigamed is not null ? brouillon.programmeGigamed.value : '',
+        'niveauAccompagnement': brouillon.niveauAccompagnement is not null ? brouillon.niveauAccompagnement.value : '',
+        'objectifAccompagnement': brouillon.objectifAccompagnement,
+        'besoinsPrioritaires': brouillonBesoinsPrioritaires,
+        'appuisStationT': brouillonAppuisStationT,
+    } %}
+    {% endif %}
+    {% set action = ami is not null ? route('deposerCandidatureAmi', {idAmi: ami.idAmi}) : route('deposerCandidatureChallenge', {idChallenge: challenge.idChallenge}) %}
+    {% set isEntreprise = utilisateur.roleUtilisateur.value == 'entreprise' %}
+{% endif %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — {% if isModification %}Modification{% else %}Saisie papier{% endif %}</span>
+        <h1>{% if isModification %}Modifier la candidature{% else %}Soumettre une candidature au nom d'un utilisateur{% endif %}</h1>
+        <p>{% if isModification %}{{ c.nomProjet }}{% else %}Le formulaire s'adapte automatiquement au rôle de l'utilisateur sélectionné.{% endif %}</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if isModification %}
+        <a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="btn btn-outline-white">← Retour à la candidature</a>
+        {% else %}
+        <a href="{{ route('adminCandidatures') }}" class="btn btn-outline-white">← Retour aux candidatures</a>
+        {% endif %}
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}" class="admin-nav-active">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Candidature</div>
+    <h1>Déposer une candidature</h1>
+    <p>
+        {% if ami is not null %}AMI : <strong>{{ ami.titreAmi }}</strong>
+        {% else %}Challenge : <strong>{{ challenge.titreChallenge }}</strong>{% endif %}
+    </p>
+    <div class="hero-actions">
+        <a href="{{ ami is not null ? route('listeAmi') : route('listeChallenges') }}" class="btn btn-outline-white">← Retour</a>
+    </div>
+</section>
+{% if brouillon is not null and ancien is not defined %}
+<div class="page-form-wide" style="padding-top:0; padding-bottom:0;">
+    <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:.85rem 1.25rem; color:#92400e; font-size:.9rem;">
+        Vous avez un brouillon enregistré. Les champs ci-dessous ont été préremplis. Complétez et déposez votre candidature.
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="page-form-wide">
+<form method="POST"
+      action="{% if isModification %}{{ route('adminModifierCandidature', {id: c.idCandidature}) }}{% elseif isAdmin %}{{ route('adminSoumettreCandidature') }}{% else %}{{ action }}{% endif %}"
+      enctype="multipart/form-data">
+
+{% if isModification %}
+
+    {% set docs = docsExistants ?? {} %}
+    {% set isEntrepriseC = isEntrepriseCandidat ?? false %}
+
+    <div class="form-card">
+        <h2>Statut</h2>
+        <div class="form-group">
+            <label for="statutCandidature">Statut <span class="required">*</span></label>
+            <select id="statutCandidature" name="statutCandidature" required>
+                {% for s in statuts %}
+                <option value="{{ s.value }}" {% if (v.statutCandidature ?? statutCandidatureValue ?? '') == s.value %}selected{% endif %}>{{ s.value|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    {% set currentEntree = v.entreeStationT ?? entreeStationTValue ?? '' %}
+    {% set currentFiliere = v.filiereCandidat ?? c.filiereCandidat ?? '' %}
+
+    <div class="form-card">
+        <h2>1. Identification du projet</h2>
+        <div class="form-group">
+            <label for="nomProjet">Nom du projet <span class="required">*</span></label>
+            <input type="text" id="nomProjet" name="nomProjet" value="{{ v.nomProjet ?? c.nomProjet }}" required>
+        </div>
+
+        <div class="form-group">
+            <label>Entrée dans Station T <span class="required">*</span></label>
+            <div class="form-radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option1" {% if currentEntree == 'option1' %}checked{% endif %} required onchange="majFiliereMod(this.value)">
+                    <span><strong>Option 01</strong> — Réponse à un besoin filière identifié</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option2" {% if currentEntree == 'option2' %}checked{% endif %} onchange="majFiliereMod(this.value)">
+                    <span><strong>Option 02</strong> — Réponse à un cas d'usage interfilières Station T</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option3" {% if currentEntree == 'option3' %}checked{% endif %} onchange="majFiliereMod(this.value)">
+                    <span><strong>Option 03</strong> — Besoin complémentaire proposé par le candidat avec pertinence territoriale démontrée</span>
+                </label>
+            </div>
+        </div>
+        <input type="hidden" name="filiereCandidat" id="filiereCandidat-mod-hidden" value="{{ currentFiliere }}">
+        <div id="mod-bloc-filiere-option1" style="display:none;">
+            <div class="form-group">
+                <label for="mod-filiere-select-opt1">Filière concernée <span class="required">*</span></label>
+                <select id="mod-filiere-select-opt1">
+                    <option value="">— Sélectionnez une filière —</option>
+                    <option value="tourisme"    {% if currentFiliere == 'tourisme' %}selected{% endif %}>Tourisme balnéaire &amp; durable</option>
+                    <option value="nautisme"    {% if currentFiliere == 'nautisme' %}selected{% endif %}>Nautisme, plaisance &amp; fluvial</option>
+                    <option value="sport"       {% if currentFiliere == 'sport' %}selected{% endif %}>Sport, bien-être &amp; loisirs</option>
+                    <option value="agriculture" {% if currentFiliere == 'agriculture' %}selected{% endif %}>Agriculture &amp; viticulture</option>
+                    <option value="commerce"    {% if currentFiliere == 'commerce' %}selected{% endif %}>Commerce &amp; artisanat</option>
+                    <option value="ville"       {% if currentFiliere == 'ville' %}selected{% endif %}>Ville de demain &amp; services de proximité</option>
+                </select>
+            </div>
+        </div>
+        <div id="mod-bloc-filiere-option2" style="display:none;">
+            <div class="form-group">
+                <label for="mod-filiere-select-opt2">Cas d'usage interfilières <span class="required">*</span></label>
+                <select id="mod-filiere-select-opt2">
+                    <option value="">— Sélectionnez un cas d'usage —</option>
+                    <option value="Produits du terroir et vins"                        {% if currentFiliere == 'Produits du terroir et vins' %}selected{% endif %}>Produits du terroir &amp; vins</option>
+                    <option value="Coeur de ville commerçant connecté"                 {% if currentFiliere == 'Coeur de ville commerçant connecté' %}selected{% endif %}>Cœur de ville commerçant connecté</option>
+                    <option value="Mobilité douce vélo et accès aux services"          {% if currentFiliere == 'Mobilité douce vélo et accès aux services' %}selected{% endif %}>Mobilité douce, vélo et accès aux services</option>
+                    <option value="Clubs et associations sportives"                    {% if currentFiliere == 'Clubs et associations sportives' %}selected{% endif %}>Clubs et associations sportives</option>
+                    <option value="Plateforme RH territorial travailleurs saisonniers" {% if currentFiliere == 'Plateforme RH territorial travailleurs saisonniers' %}selected{% endif %}>Plateforme RH territorial / travailleurs saisonniers</option>
+                    <option value="Plateforme travailleurs saisonniers"                {% if currentFiliere == 'Plateforme travailleurs saisonniers' %}selected{% endif %}>Plateforme travailleurs saisonniers</option>
+                    <option value="Commerces augmentés"                                {% if currentFiliere == 'Commerces augmentés' %}selected{% endif %}>Commerces augmentés</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="besoinTraite">Besoin traité <span class="required">*</span></label>
+            <textarea id="besoinTraite" name="besoinTraite" rows="2" required>{{ v.besoinTraite ?? c.besoinTraite }}</textarea>
+        </div>
+    </div>
+
+    {% if not isEntrepriseC %}
+
+    
+    <div class="form-card">
+        <h2>2. Résumé du projet</h2>
+        <div class="form-group">
+            <label for="pitchCourt">Pitch court du projet</label>
+            <textarea id="pitchCourt" name="pitchCourt" rows="3">{{ v.pitchCourt ?? c.pitchCourt }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="problemeIdentifie">Problème ou besoin identifié</label>
+            <textarea id="problemeIdentifie" name="problemeIdentifie" rows="3">{{ v.problemeIdentifie ?? c.problemeIdentifie }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="descriptionProjet">Solution proposée <span class="required">*</span></label>
+            <textarea id="descriptionProjet" name="descriptionProjet" rows="4" required>{{ v.descriptionProjet ?? c.descriptionProjet }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>3. Innovation &amp; différenciation</h2>
+        <div class="form-group">
+            <label for="innovationDifferentiation">Innovation ou différenciation <span class="required">*</span></label>
+            <textarea id="innovationDifferentiation" name="innovationDifferentiation" rows="3" required>{{ v.innovationDifferentiation ?? c.innovationDifferentiation }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="concurrence">Concurrence et alternatives existantes</label>
+            <textarea id="concurrence" name="concurrence" rows="3">{{ v.concurrence ?? c.concurrence }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>4. Marché, clients et usages</h2>
+        <div class="form-group">
+            <label for="clientsCibles">Clients ou utilisateurs cibles</label>
+            <textarea id="clientsCibles" name="clientsCibles" rows="3">{{ v.clientsCibles ?? c.clientsCibles }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="preuvesBesoin">Preuves de besoin déjà obtenues</label>
+            <textarea id="preuvesBesoin" name="preuvesBesoin" rows="3">{{ v.preuvesBesoin ?? c.preuvesBesoin }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>5. Maturité de la solution</h2>
+        <div class="form-group">
+            <label for="maturite">Stade de maturité <span class="required">*</span></label>
+            <select id="maturite" name="maturite" required>
+                <option value="idée"                    {% if (v.maturite ?? maturiteValue ?? '') == 'idée' %}selected{% endif %}>Idée</option>
+                <option value="maquette"                {% if (v.maturite ?? maturiteValue ?? '') == 'maquette' %}selected{% endif %}>Maquette</option>
+                <option value="MVP"                     {% if (v.maturite ?? maturiteValue ?? '') == 'MVP' %}selected{% endif %}>MVP</option>
+                <option value="premières ventes"        {% if (v.maturite ?? maturiteValue ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                <option value="recherche de financement"{% if (v.maturite ?? maturiteValue ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                <option value="solution vendue"         {% if (v.maturite ?? maturiteValue ?? '') == 'solution vendue' %}selected{% endif %}>Solution vendue</option>
+                <option value="démonstrateur"           {% if (v.maturite ?? maturiteValue ?? '') == 'démonstrateur' %}selected{% endif %}>Démonstrateur</option>
+                <option value="autre"                   {% if (v.maturite ?? maturiteValue ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="etatAvancement">État d'avancement</label>
+            <textarea id="etatAvancement" name="etatAvancement" rows="3">{{ v.etatAvancement ?? c.etatAvancement }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>6. Modèle économique et financement</h2>
+        <div class="form-group">
+            <label for="modelEconomique">Modèle économique <span class="required">*</span></label>
+            <textarea id="modelEconomique" name="modelEconomique" rows="3" required>{{ v.modelEconomique ?? c.modelEconomique }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="besoinsFinanciers">Besoins financiers</label>
+            <textarea id="besoinsFinanciers" name="besoinsFinanciers" rows="3">{{ v.besoinsFinanciers ?? c.besoinsFinanciers }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>7. Équipe et capacité d'exécution</h2>
+        <div class="form-group">
+            <label for="equipe">Composition de l'équipe</label>
+            <textarea id="equipe" name="equipe" rows="4">{{ v.equipe ?? c.equipe }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="forcesEquipe">Forces de l'équipe</label>
+            <textarea id="forcesEquipe" name="forcesEquipe" rows="3">{{ v.forcesEquipe ?? c.forcesEquipe }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>8. Accompagnement Gigamed Innovation</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="programmeGigamed">Programme souhaité</label>
+                <select id="programmeGigamed" name="programmeGigamed">
+                    <option value="">— Aucun —</option>
+                    <option value="incubation"   {% if (v.programmeGigamed ?? c.programmeGigamed?.value) == 'incubation' %}selected{% endif %}>Incubation</option>
+                    <option value="amorçage"     {% if (v.programmeGigamed ?? c.programmeGigamed?.value) == 'amorçage' %}selected{% endif %}>Amorçage</option>
+                    <option value="accélération" {% if (v.programmeGigamed ?? c.programmeGigamed?.value) == 'accélération' %}selected{% endif %}>Accélération</option>
+                    <option value="à déterminer" {% if (v.programmeGigamed ?? c.programmeGigamed?.value) == 'à déterminer' %}selected{% endif %}>À déterminer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="niveauAccompagnement">Niveau d'accompagnement</label>
+                <select id="niveauAccompagnement" name="niveauAccompagnement">
+                    <option value="">— Aucun —</option>
+                    <option value="essentiel"    {% if (v.niveauAccompagnement ?? c.niveauAccompagnement?.value) == 'essentiel' %}selected{% endif %}>Essentiel</option>
+                    <option value="renforcé"     {% if (v.niveauAccompagnement ?? c.niveauAccompagnement?.value) == 'renforcé' %}selected{% endif %}>Renforcé</option>
+                    <option value="à déterminer" {% if (v.niveauAccompagnement ?? c.niveauAccompagnement?.value) == 'à déterminer' %}selected{% endif %}>À déterminer</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Besoins prioritaires</label>
+            <div class="checkbox-grid">
+                {% set besoinsOptions = ['Clarification de la proposition de valeur','Validation du besoin marché','Go-to-market et acquisition client','Structuration commerciale','Business model et stratégie','Préparation financement / pitch deck','Tests utilisateurs / clients',"Accès à des terrains d'expérimentation",'Mise en relation partenaires / mentors','Hébergement / espace de travail','Autre'] %}
+                {% set bpActifs = v.besoinsPrioritaires is defined and v.besoinsPrioritaires is iterable ? v.besoinsPrioritaires : (besoinsPrioritairesDecodes ?? []) %}
+                {% for option in besoinsOptions %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="besoinsPrioritaires[]" value="{{ option }}" {% if option in bpActifs %}checked{% endif %}>
+                    <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="objectifAccompagnement">Objectif d'accompagnement</label>
+            <textarea id="objectifAccompagnement" name="objectifAccompagnement" rows="2">{{ v.objectifAccompagnement ?? c.objectifAccompagnement }}</textarea>
+        </div>
+    </div>
+
+    {% else %}
+
+    
+    <div class="form-card">
+        <h2>2. Solution proposée</h2>
+        <div class="form-group">
+            <label for="descriptionProjet">Description synthétique de la solution <span class="required">*</span></label>
+            <textarea id="descriptionProjet" name="descriptionProjet" rows="4" required>{{ v.descriptionProjet ?? c.descriptionProjet }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="valeurAjoutee">Valeur ajoutée pour les utilisateurs</label>
+            <textarea id="valeurAjoutee" name="valeurAjoutee" rows="3">{{ v.valeurAjoutee ?? c.valeurAjoutee }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="innovationDifferentiation">Innovation ou différenciation <span class="required">*</span></label>
+            <textarea id="innovationDifferentiation" name="innovationDifferentiation" rows="3" required>{{ v.innovationDifferentiation ?? c.innovationDifferentiation }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>3. Références, maturité et capacité</h2>
+        <div class="form-group">
+            <label for="maturite">Stade de maturité <span class="required">*</span></label>
+            <select id="maturite" name="maturite" required>
+                <option value="idée"                    {% if (v.maturite ?? maturiteValue ?? '') == 'idée' %}selected{% endif %}>Idée</option>
+                <option value="maquette"                {% if (v.maturite ?? maturiteValue ?? '') == 'maquette' %}selected{% endif %}>Maquette</option>
+                <option value="MVP"                     {% if (v.maturite ?? maturiteValue ?? '') == 'MVP' %}selected{% endif %}>MVP</option>
+                <option value="premières ventes"        {% if (v.maturite ?? maturiteValue ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                <option value="recherche de financement"{% if (v.maturite ?? maturiteValue ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                <option value="solution vendue"         {% if (v.maturite ?? maturiteValue ?? '') == 'solution vendue' %}selected{% endif %}>Solution vendue</option>
+                <option value="démonstrateur"           {% if (v.maturite ?? maturiteValue ?? '') == 'démonstrateur' %}selected{% endif %}>Démonstrateur</option>
+                <option value="autre"                   {% if (v.maturite ?? maturiteValue ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="references">Références clients, pilotes ou réalisations</label>
+            <textarea id="references" name="references" rows="3">{{ v.references ?? c.references_ }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>4. Expérimentation Station T</h2>
+        <div class="form-group">
+            <label for="objectifPilote">Objectif du pilote</label>
+            <textarea id="objectifPilote" name="objectifPilote" rows="3">{{ v.objectifPilote ?? c.objectifPilote }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="perimetreGeographique">Périmètre géographique</label>
+                <input type="text" id="perimetreGeographique" name="perimetreGeographique" value="{{ v.perimetreGeographique ?? c.perimetreGeographique }}">
+            </div>
+            <div class="form-group">
+                <label for="dureeExperimentation">Durée d'expérimentation</label>
+                <input type="text" id="dureeExperimentation" name="dureeExperimentation" value="{{ v.dureeExperimentation ?? c.dureeExperimentation }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="publicsCibles">Publics cibles</label>
+            <textarea id="publicsCibles" name="publicsCibles" rows="2">{{ v.publicsCibles ?? c.publicsCibles }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="budgetMobiliser">Budget à mobiliser</label>
+                <input type="text" id="budgetMobiliser" name="budgetMobiliser" value="{{ v.budgetMobiliser ?? c.budgetMobiliser }}">
+            </div>
+            <div class="form-group">
+                <label for="moyensMobiliser">Moyens à mobiliser</label>
+                <input type="text" id="moyensMobiliser" name="moyensMobiliser" value="{{ v.moyensMobiliser ?? c.moyensMobiliser }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="conditionsReussite">Conditions de réussite</label>
+            <textarea id="conditionsReussite" name="conditionsReussite" rows="3">{{ v.conditionsReussite ?? c.conditionsReussite }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="derouteOperationnel">Déroulé opérationnel</label>
+            <textarea id="derouteOperationnel" name="derouteOperationnel" rows="3">{{ v.derouteOperationnel ?? c.derouteOperationnel }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>5. Partenaires et appuis Station T</h2>
+        <div class="form-group">
+            <label for="partenairesRecherches">Partenaires recherchés</label>
+            <textarea id="partenairesRecherches" name="partenairesRecherches" rows="3">{{ v.partenairesRecherches ?? c.partenairesRecherches }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Appuis attendus de Station T</label>
+            <div class="checkbox-grid">
+                {% set appuisOptions = ['Mise en relation avec entreprises ou sites pilotes','Qualification du besoin terrain','Retours experts / mentors','Accès à un comité partenaires','Appui méthodologique au protocole de test','Valorisation / communication selon cadre validé','Orientation vers Gigamed Entreprise ou partenaires','Autre'] %}
+                {% set appuisActifs = v.appuisStationT is defined and v.appuisStationT is iterable ? v.appuisStationT : (appuisStationTDecodes ?? []) %}
+                {% for option in appuisOptions %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="appuisStationT[]" value="{{ option }}" {% if option in appuisActifs %}checked{% endif %}>
+                    <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="appuisStationT" id="appuisStationT-mod-hidden" value="{{ v.appuisStationT ?? c.appuisStationT ?? '' }}">
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>6. Modèle économique &amp; impact</h2>
+        <div class="form-group">
+            <label for="modelEconomique">Modèle économique <span class="required">*</span></label>
+            <textarea id="modelEconomique" name="modelEconomique" rows="3" required>{{ v.modelEconomique ?? c.modelEconomique }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="conditionsDeploiement">Conditions de déploiement</label>
+            <textarea id="conditionsDeploiement" name="conditionsDeploiement" rows="3">{{ v.conditionsDeploiement ?? c.conditionsDeploiement }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="impactAttendu">Impact attendu</label>
+            <textarea id="impactAttendu" name="impactAttendu" rows="3">{{ v.impactAttendu ?? c.impactAttendu }}</textarea>
+        </div>
+    </div>
+
+    {% endif %}
+
+    <div class="form-card">
+        <h2>Pièces à joindre</h2>
+        <p class="form-hint" style="margin-bottom:1.25rem;">Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG — 10 Mo max par fichier.</p>
+
+        {% if not isEntrepriseC %}
+        <div class="form-group">
+            <label for="doc_cv">CV du ou des porteurs de projet {% if docs['doc_cv'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_cv'] ?? null, 'doc_cv', true) }}
+            {% if docs['doc_cv'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_cv" name="doc_cv" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" {% if docs['doc_cv'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_pitch">Pitch deck ou présentation courte</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_pitch'] ?? null, 'doc_pitch', false) }}
+            {% if docs['doc_pitch'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_pitch" name="doc_pitch" accept=".pdf,.ppt,.pptx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_business_plan">Business plan ou note économique</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_business_plan'] ?? null, 'doc_business_plan', false) }}
+            {% if docs['doc_business_plan'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_business_plan" name="doc_business_plan" accept=".pdf,.doc,.docx,.xls,.xlsx">
+        </div>
+        <div class="form-group">
+            <label for="doc_previsionnel">Prévisionnel financier</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_previsionnel'] ?? null, 'doc_previsionnel', false) }}
+            {% if docs['doc_previsionnel'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_previsionnel" name="doc_previsionnel" accept=".pdf,.xls,.xlsx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_immatriculation">Justificatif d'immatriculation</label>
+            <p class="form-hint">Si la structure est déjà créée.</p>
+            {{ _self.docActuel(docs['doc_immatriculation'] ?? null, 'doc_immatriculation', false) }}
+            {% if docs['doc_immatriculation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_immatriculation" name="doc_immatriculation" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_preuves">Éléments de preuve</label>
+            <p class="form-hint">Lettres d'intérêt, tests, devis, retours clients, prototypes, liens de démonstration.</p>
+            {{ _self.docActuel(docs['doc_preuves'] ?? null, 'doc_preuves', false) }}
+            {% if docs['doc_preuves'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_preuves" name="doc_preuves" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_autre">Autre document utile</label>
+            {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre', false) }}
+            {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_autre" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+        </div>
+
+        {% else %}
+        <div class="form-group">
+            <label for="doc_presentation">Présentation de la structure et de la solution {% if docs['doc_presentation'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_presentation'] ?? null, 'doc_presentation', true) }}
+            {% if docs['doc_presentation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_presentation" name="doc_presentation" accept=".pdf,.ppt,.pptx,.doc,.docx" {% if docs['doc_presentation'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_kbis">Extrait Kbis, avis SIRENE ou justificatif d'existence {% if docs['doc_kbis'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_kbis'] ?? null, 'doc_kbis', true) }}
+            {% if docs['doc_kbis'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_kbis" name="doc_kbis" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_kbis'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_assurance">Attestation d'assurance responsabilité civile professionnelle {% if docs['doc_assurance'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_assurance'] ?? null, 'doc_assurance', true) }}
+            {% if docs['doc_assurance'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_assurance" name="doc_assurance" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_assurance'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_references">Références clients, pilotes ou démonstrations disponibles</label>
+            {{ _self.docActuel(docs['doc_references'] ?? null, 'doc_references', false) }}
+            {% if docs['doc_references'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_references" name="doc_references" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_technique">Documentation technique ou fonctionnelle</label>
+            {{ _self.docActuel(docs['doc_technique'] ?? null, 'doc_technique', false) }}
+            {% if docs['doc_technique'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_technique" name="doc_technique" accept=".pdf,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_financier">Éléments financiers ou modèle économique synthétique</label>
+            {{ _self.docActuel(docs['doc_financier'] ?? null, 'doc_financier', false) }}
+            {% if docs['doc_financier'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_financier" name="doc_financier" accept=".pdf,.xls,.xlsx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_rgpd">Conditions générales, politique de confidentialité ou documents RGPD</label>
+            <p class="form-hint">Le cas échéant.</p>
+            {{ _self.docActuel(docs['doc_rgpd'] ?? null, 'doc_rgpd', false) }}
+            {% if docs['doc_rgpd'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_rgpd" name="doc_rgpd" accept=".pdf,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_autre">Autre document utile</label>
+            {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre', false) }}
+            {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_autre" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display:flex; gap:1rem; margin-bottom:3rem;">
+        <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+        <a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+    </div>
+
+{% elseif isAdmin %}
+
+    {% if idBrouillonCharge is defined and idBrouillonCharge is not null %}<input type="hidden" name="idBrouillonCharge" value="{{ idBrouillonCharge }}">{% endif %}
+
+    <div class="form-card">
+        <h2>Rattachement</h2>
+        <div class="form-group">
+            <label for="idUtilisateur">Utilisateur <span class="required">*</span></label>
+            <select id="idUtilisateur" name="idUtilisateur" required onchange="majRole(this)">
+                <option value="0" data-role="">— Sélectionnez un utilisateur —</option>
+                {% for u in utilisateurs %}
+                <option value="{{ u.idUtilisateur }}" data-role="{{ u.roleUtilisateur.value }}"
+                    {% if (v.idUtilisateur ?? '') == u.idUtilisateur %}selected{% endif %}>
+                    {{ u.prenomUtilisateur }} {{ u.nomUtilisateur }} — {{ u.emailUtilisateur }} ({{ u.roleUtilisateur.value }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="idAmi">AMI concerné <span class="optional">(laisser vide si challenge)</span></label>
+                <select id="idAmi" name="idAmi">
+                    <option value="">— Aucun AMI —</option>
+                    {% for ami in amis %}
+                    <option value="{{ ami.idAmi }}" {% if (v.idAmi ?? '') == ami.idAmi %}selected{% endif %}>
+                        {{ ami.titreAmi }} ({{ ami.statutAmi.value }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="idChallenge">Challenge concerné <span class="optional">(laisser vide si AMI)</span></label>
+                <select id="idChallenge" name="idChallenge">
+                    <option value="">— Aucun challenge —</option>
+                    {% for challenge in challenges %}
+                    <option value="{{ challenge.idChallenge }}" {% if (v.idChallenge ?? '') == challenge.idChallenge %}selected{% endif %}>
+                        {{ challenge.titreChallenge }} ({{ challenge.statutChallenge.value }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <p class="form-hint" style="color:var(--orange);">La candidature doit être liée à un AMI <em>ou</em> un challenge, pas les deux.</p>
+    </div>
+
+    <div id="form-content" style="display:none;">
+
+    <div class="form-card">
+        <h2>1. Identification du projet</h2>
+        <div class="form-group">
+            <label for="nomProjet">Nom du projet / de la solution <span class="required">*</span></label>
+            <input type="text" id="nomProjet" name="nomProjet" value="{{ v.nomProjet ?? '' }}" required placeholder="Ex : TouriConnect">
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>2. Cas d'usage ou besoin territorial traité</h2>
+        <div class="form-group">
+            <label>Entrée dans Station T <span class="required">*</span></label>
+            <div class="form-radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option1" {% if (v.entreeStationT ?? '') == 'option1' %}checked{% endif %} required onchange="majFiliere(this.value)">
+                    <span><strong>Option 01</strong> — Réponse à un besoin filière identifié</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option2" {% if (v.entreeStationT ?? '') == 'option2' %}checked{% endif %} onchange="majFiliere(this.value)">
+                    <span><strong>Option 02</strong> — Réponse à un cas d'usage interfilières Station T</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option3" {% if (v.entreeStationT ?? '') == 'option3' %}checked{% endif %} onchange="majFiliere(this.value)">
+                    <span><strong>Option 03</strong> — Besoin complémentaire proposé par le candidat avec pertinence territoriale démontrée</span>
+                </label>
+            </div>
+        </div>
+        <input type="hidden" name="filiereCandidat" id="filiereCandidat-hidden" value="{{ v.filiereCandidat ?? '' }}">
+        <div id="bloc-filiere-option1" style="display:none;">
+            <div class="form-group">
+                <label for="filiere-select-opt1">Filière concernée <span class="required">*</span></label>
+                <select id="filiere-select-opt1">
+                    <option value="">— Sélectionnez une filière —</option>
+                    <option value="tourisme"    {% if (v.filiereCandidat ?? '') == 'tourisme' %}selected{% endif %}>Tourisme balnéaire &amp; durable</option>
+                    <option value="nautisme"    {% if (v.filiereCandidat ?? '') == 'nautisme' %}selected{% endif %}>Nautisme, plaisance &amp; fluvial</option>
+                    <option value="sport"       {% if (v.filiereCandidat ?? '') == 'sport' %}selected{% endif %}>Sport, bien-être &amp; loisirs</option>
+                    <option value="agriculture" {% if (v.filiereCandidat ?? '') == 'agriculture' %}selected{% endif %}>Agriculture &amp; viticulture</option>
+                    <option value="commerce"    {% if (v.filiereCandidat ?? '') == 'commerce' %}selected{% endif %}>Commerce &amp; artisanat</option>
+                    <option value="ville"       {% if (v.filiereCandidat ?? '') == 'ville' %}selected{% endif %}>Ville de demain &amp; services de proximité</option>
+                </select>
+            </div>
+        </div>
+        <div id="bloc-filiere-option2-entreprise" style="display:none;">
+            <div class="form-group">
+                <label for="filiere-select-opt2-e">Cas d'usage interfilières <span class="required">*</span></label>
+                <select id="filiere-select-opt2-e">
+                    <option value="">— Sélectionnez un cas d'usage —</option>
+                    <option value="Produits du terroir et vins"                        {% if (v.filiereCandidat ?? '') == 'Produits du terroir et vins' %}selected{% endif %}>Produits du terroir &amp; vins</option>
+                    <option value="Coeur de ville commerçant connecté"                 {% if (v.filiereCandidat ?? '') == 'Coeur de ville commerçant connecté' %}selected{% endif %}>Cœur de ville commerçant connecté</option>
+                    <option value="Mobilité douce vélo et accès aux services"          {% if (v.filiereCandidat ?? '') == 'Mobilité douce vélo et accès aux services' %}selected{% endif %}>Mobilité douce, vélo et accès aux services</option>
+                    <option value="Clubs et associations sportives"                    {% if (v.filiereCandidat ?? '') == 'Clubs et associations sportives' %}selected{% endif %}>Clubs et associations sportives</option>
+                    <option value="Plateforme RH territorial travailleurs saisonniers" {% if (v.filiereCandidat ?? '') == 'Plateforme RH territorial travailleurs saisonniers' %}selected{% endif %}>Plateforme RH territorial / travailleurs saisonniers</option>
+                </select>
+            </div>
+        </div>
+        <div id="bloc-filiere-option2-startup" style="display:none;">
+            <div class="form-group">
+                <label for="filiere-select-opt2-s">Cas d'usage interfilières <span class="required">*</span></label>
+                <select id="filiere-select-opt2-s">
+                    <option value="">— Sélectionnez un cas d'usage —</option>
+                    <option value="Produits du terroir et vins"              {% if (v.filiereCandidat ?? '') == 'Produits du terroir et vins' %}selected{% endif %}>Produits du terroir &amp; vins</option>
+                    <option value="Plateforme travailleurs saisonniers"       {% if (v.filiereCandidat ?? '') == 'Plateforme travailleurs saisonniers' %}selected{% endif %}>Plateforme travailleurs saisonniers</option>
+                    <option value="Mobilité douce vélo et accès aux services" {% if (v.filiereCandidat ?? '') == 'Mobilité douce vélo et accès aux services' %}selected{% endif %}>Mobilité douce, vélo et accès aux services</option>
+                    <option value="Clubs et associations sportives"            {% if (v.filiereCandidat ?? '') == 'Clubs et associations sportives' %}selected{% endif %}>Clubs et associations sportives</option>
+                    <option value="Commerces augmentés"                        {% if (v.filiereCandidat ?? '') == 'Commerces augmentés' %}selected{% endif %}>Commerces augmentés</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="besoinTraite">Besoin, irritant ou opportunité traité <span class="required">*</span></label>
+            <p class="form-hint">Décrivez le problème concret du territoire, des entreprises, des filières, des habitants ou des visiteurs auquel votre solution répond.</p>
+            <textarea id="besoinTraite" name="besoinTraite" rows="4" required placeholder="Quel problème concret adressez-vous ?">{{ v.besoinTraite ?? '' }}</textarea>
+        </div>
+    </div>
+
+        <div class="section-role section-startup" style="display:none;">
+        <div class="form-card">
+            <h2>3. Résumé du projet</h2>
+            <div class="form-group">
+                <label for="pitchCourt">Pitch court du projet <span class="required">*</span></label>
+                <p class="form-hint">En quelques lignes : le problème traité, la solution proposée, les clients visés et l'impact attendu.</p>
+                <textarea id="pitchCourt" name="pitchCourt" rows="3" placeholder="Décrivez votre projet en 3-4 phrases.">{{ v.pitchCourt ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="problemeIdentifie">Problème ou besoin identifié <span class="required">*</span></label>
+                <p class="form-hint">Quel problème concret traitez-vous ? Pour qui ? Sur quelle base l'avez-vous identifié ?</p>
+                <textarea id="problemeIdentifie" name="problemeIdentifie" rows="3" placeholder="Décrivez le problème et sa réalité terrain.">{{ v.problemeIdentifie ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="descriptionProjet">Solution proposée <span class="required">*</span></label>
+                <p class="form-hint">Décrivez le produit, service, application, plateforme, équipement ou méthode proposée.</p>
+                <textarea id="descriptionProjet" name="descriptionProjet" rows="4" required placeholder="Décrivez votre solution en détail.">{{ v.descriptionProjet ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>4. Caractère innovant et différenciation</h2>
+            <div class="form-group">
+                <label for="innovationDifferentiation">Innovation ou différenciation <span class="required">*</span></label>
+                <p class="form-hint">Ce qui est nouveau, différenciant ou plus performant : usage, technologie, modèle, distribution, service, impact.</p>
+                <textarea id="innovationDifferentiation" name="innovationDifferentiation" rows="3" required placeholder="En quoi votre solution est-elle innovante ?">{{ v.innovationDifferentiation ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="concurrence">Concurrence et alternatives existantes <span class="required">*</span></label>
+                <p class="form-hint">Quelles solutions les clients utilisent-ils aujourd'hui ? Pourquoi votre approche peut-elle être meilleure ou complémentaire ?</p>
+                <textarea id="concurrence" name="concurrence" rows="3" placeholder="Décrivez les alternatives et votre positionnement.">{{ v.concurrence ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>5. Marché, clients et usages</h2>
+            <div class="form-group">
+                <label for="clientsCibles">Clients ou utilisateurs cibles <span class="required">*</span></label>
+                <p class="form-hint">Segments prioritaires : particuliers, entreprises, collectivités, touristes, professionnels, filières concernées.</p>
+                <textarea id="clientsCibles" name="clientsCibles" rows="3" placeholder="Qui sont vos utilisateurs cibles ?">{{ v.clientsCibles ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="preuvesBesoin">Preuves de besoin déjà obtenues <span class="required">*</span></label>
+                <p class="form-hint">Entretiens, questionnaires, lettres d'intérêt, tests, précommandes, premiers clients, retours terrain.</p>
+                <textarea id="preuvesBesoin" name="preuvesBesoin" rows="3" placeholder="Quelles preuves avez-vous du besoin marché ?">{{ v.preuvesBesoin ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>6. Maturité de la solution</h2>
+            <div class="form-group">
+                <label for="maturite">Niveau de maturité actuel <span class="required">*</span></label>
+                <select id="maturite" name="maturite" required>
+                    <option value="">— Sélectionnez —</option>
+                    <option value="idée"                     {% if (v.maturite ?? '') == 'idée' %}selected{% endif %}>Idée cadrée</option>
+                    <option value="maquette"                 {% if (v.maturite ?? '') == 'maquette' %}selected{% endif %}>Maquette / prototype</option>
+                    <option value="MVP"                      {% if (v.maturite ?? '') == 'MVP' %}selected{% endif %}>MVP ou version testable</option>
+                    <option value="premières ventes"         {% if (v.maturite ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                    <option value="recherche de financement" {% if (v.maturite ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                    <option value="solution vendue"          {% if (v.maturite ?? '') == 'solution vendue' %}selected{% endif %}>Solution déjà utilisée par des clients</option>
+                    <option value="démonstrateur"            {% if (v.maturite ?? '') == 'démonstrateur' %}selected{% endif %}>Déploiement commercial en cours</option>
+                    <option value="autre"                    {% if (v.maturite ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label for="etatAvancement">État d'avancement technique ou opérationnel <span class="required">*</span></label>
+                <p class="form-hint">Ce qui existe déjà, ce qui reste à développer, principaux jalons à 3, 6 et 12 mois.</p>
+                <textarea id="etatAvancement" name="etatAvancement" rows="3" placeholder="Décrivez l'avancement et les prochaines étapes.">{{ v.etatAvancement ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>7. Modèle économique et financement</h2>
+            <div class="form-group">
+                <label for="modelEconomique">Modèle économique envisagé <span class="required">*</span></label>
+                <p class="form-hint">Vente directe, abonnement, commission, licence, prestation, freemium, achat-revente, autre.</p>
+                <textarea id="modelEconomique" name="modelEconomique" rows="3" required placeholder="Comment votre solution génère-t-elle de la valeur économique ?">{{ v.modelEconomique ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="besoinsFinanciers">Besoins financiers et ressources disponibles <span class="required">*</span></label>
+                <p class="form-hint">Budget déjà mobilisé, besoins à venir, aides sollicitées, levées de fonds prévues, autofinancement.</p>
+                <textarea id="besoinsFinanciers" name="besoinsFinanciers" rows="3" placeholder="Quels sont vos besoins financiers ?">{{ v.besoinsFinanciers ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>8. Équipe et capacité d'exécution</h2>
+            <div class="form-group">
+                <label for="equipe">Composition de l'équipe <span class="required">*</span></label>
+                <p class="form-hint">Nom / prénom — Rôle dans le projet — Compétences / disponibilité</p>
+                <textarea id="equipe" name="equipe" rows="4" placeholder="Ex : Jean Dupont — Développeur — disponible 5j/sem">{{ v.equipe ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="forcesEquipe">Forces de l'équipe et besoins de renfort <span class="required">*</span></label>
+                <p class="form-hint">Compétences clés, disponibilité, manques identifiés, recrutements ou partenaires nécessaires.</p>
+                <textarea id="forcesEquipe" name="forcesEquipe" rows="3" placeholder="Quelles sont vos forces et vos besoins de renfort ?">{{ v.forcesEquipe ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>9. Besoins d'accompagnement Gigamed Innovation</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="programmeGigamed">Programme souhaité <span class="required">*</span></label>
+                    <select id="programmeGigamed" name="programmeGigamed">
+                        <option value="">— Sélectionnez —</option>
+                        <option value="incubation"   {% if (v.programmeGigamed ?? '') == 'incubation' %}selected{% endif %}>Incubation — structurer le projet et valider le besoin</option>
+                        <option value="amorçage"     {% if (v.programmeGigamed ?? '') == 'amorçage' %}selected{% endif %}>Amorçage — tester le marché et générer les premiers signaux commerciaux</option>
+                        <option value="accélération" {% if (v.programmeGigamed ?? '') == 'accélération' %}selected{% endif %}>Accélération — structurer la croissance et le développement</option>
+                        <option value="à déterminer" {% if (v.programmeGigamed ?? '') == 'à déterminer' %}selected{% endif %}>À déterminer — je souhaite être orienté par le comité d'instruction</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="niveauAccompagnement">Niveau d'accompagnement <span class="required">*</span></label>
+                    <select id="niveauAccompagnement" name="niveauAccompagnement">
+                        <option value="">— Sélectionnez —</option>
+                        <option value="essentiel"    {% if (v.niveauAccompagnement ?? '') == 'essentiel' %}selected{% endif %}>Essentiel</option>
+                        <option value="renforcé"     {% if (v.niveauAccompagnement ?? '') == 'renforcé' %}selected{% endif %}>Renforcé</option>
+                        <option value="à déterminer" {% if (v.niveauAccompagnement ?? '') == 'à déterminer' %}selected{% endif %}>À déterminer après instruction</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label>Besoins prioritaires <span class="required">*</span></label>
+                <p class="form-hint">Cochez tous les besoins qui s'appliquent à votre situation.</p>
+                <div class="checkbox-grid">
+                    {% set besoinsOptions = ['Clarification de la proposition de valeur','Validation du besoin marché','Go-to-market et acquisition client','Structuration commerciale','Business model et stratégie','Préparation financement / pitch deck','Tests utilisateurs / clients',"Accès à des terrains d'expérimentation",'Mise en relation partenaires / mentors','Hébergement / espace de travail','Autre'] %}
+                    {% for option in besoinsOptions %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="besoinsPrioritaires[]" value="{{ option }}" {% if v.besoinsPrioritaires is defined and option in (v.besoinsPrioritaires ?? []) %}checked{% endif %}>
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="objectifAccompagnement">Objectifs attendus de l'accompagnement <span class="required">*</span></label>
+                <p class="form-hint">Quels résultats concrets souhaitez-vous obtenir à l'issue de l'accompagnement ?</p>
+                <textarea id="objectifAccompagnement" name="objectifAccompagnement" rows="3" placeholder="Décrivez vos objectifs.">{{ v.objectifAccompagnement ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>10. Engagements du candidat</h2>
+            <p class="form-hint" style="margin-bottom:1rem;">Tous les engagements suivants sont obligatoires pour valider le dossier.</p>
+            <div class="engagement-list">
+                <label class="engagement-item"><input type="checkbox" name="eng_certifie" value="1" required {% if (v.eng_certifie ?? '') == '1' %}checked{% endif %}><span>Je certifie avoir recueilli les informations du candidat et les saisir fidèlement.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_suivi" value="1" {% if (v.eng_suivi ?? '') == '1' %}checked{% endif %}><span>Le candidat s'engage à participer aux rendez-vous de suivi convenus.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_instruction" value="1" {% if (v.eng_instruction ?? '') == '1' %}checked{% endif %}><span>Le candidat accepte que son dossier soit instruit par les personnes habilitées.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_reorientation" value="1" {% if (v.eng_reorientation ?? '') == '1' %}checked{% endif %}><span>Le candidat accepte d'être réorienté vers un autre dispositif si plus pertinent.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_changement" value="1" {% if (v.eng_changement ?? '') == '1' %}checked{% endif %}><span>Le candidat s'engage à signaler tout changement majeur du projet.</span></label>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>11. Pièces à joindre</h2>
+            <p class="form-hint" style="margin-bottom:1.25rem;">Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG — 10 Mo max par fichier.</p>
+            {% set docs = docsExistants ?? {} %}
+            <div class="form-group">
+                <label for="doc_cv">CV du ou des porteurs de projet {% if docs['doc_cv'] is not defined %}<span class="required">*</span>{% endif %}</label>
+                {{ _self.docActuel(docs['doc_cv'] ?? null, 'doc_cv', true) }}
+                {% if docs['doc_cv'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_cv" name="doc_cv" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" {% if docs['doc_cv'] is not defined %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="doc_pitch">Pitch deck ou présentation courte <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_pitch'] ?? null, 'doc_pitch', false) }}
+                {% if docs['doc_pitch'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_pitch" name="doc_pitch" accept=".pdf,.ppt,.pptx,.doc,.docx">
+            </div>
+            <div class="form-group">
+                <label for="doc_business_plan">Business plan ou note économique <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_business_plan'] ?? null, 'doc_business_plan', false) }}
+                {% if docs['doc_business_plan'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_business_plan" name="doc_business_plan" accept=".pdf,.doc,.docx,.xls,.xlsx">
+            </div>
+            <div class="form-group">
+                <label for="doc_previsionnel">Prévisionnel financier <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_previsionnel'] ?? null, 'doc_previsionnel', false) }}
+                {% if docs['doc_previsionnel'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_previsionnel" name="doc_previsionnel" accept=".pdf,.xls,.xlsx,.doc,.docx">
+            </div>
+            <div class="form-group">
+                <label for="doc_immatriculation">Justificatif d'immatriculation <span class="optional">(si structure déjà créée)</span></label>
+                {{ _self.docActuel(docs['doc_immatriculation'] ?? null, 'doc_immatriculation', false) }}
+                {% if docs['doc_immatriculation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_immatriculation" name="doc_immatriculation" accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+            <div class="form-group">
+                <label for="doc_preuves">Éléments de preuve <span class="optional">(lettres d'intérêt, tests, retours clients…)</span></label>
+                {{ _self.docActuel(docs['doc_preuves'] ?? null, 'doc_preuves', false) }}
+                {% if docs['doc_preuves'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_preuves" name="doc_preuves" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+            </div>
+            <div class="form-group">
+                <label for="doc_autre_s">Autre document utile <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre_s', false) }}
+                {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_autre_s" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+            </div>
+        </div>
+    </div>
+        <div class="section-role section-entreprise" style="display:none;">
+        <div class="form-card">
+            <h2>3. Solution proposée</h2>
+            <div class="form-group">
+                <label for="descriptionProjet-e">Description synthétique de la solution <span class="required">*</span></label>
+                <p class="form-hint">Produit, service, plateforme, équipement, méthode, outil numérique, organisation ou dispositif proposé.</p>
+                <textarea id="descriptionProjet-e" name="descriptionProjet" rows="4" required placeholder="Décrivez votre solution.">{{ v.descriptionProjet ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="valeurAjoutee">Valeur ajoutée pour les utilisateurs ou professionnels <span class="required">*</span></label>
+                <p class="form-hint">Bénéfices concrets : gain de temps, ventes, simplicité, sécurité, qualité de service, impact local.</p>
+                <textarea id="valeurAjoutee" name="valeurAjoutee" rows="3" required placeholder="Quelle valeur ajoutée concrète apportez-vous ?">{{ v.valeurAjoutee ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="innovationDifferentiation-e">Innovation ou différenciation <span class="required">*</span></label>
+                <p class="form-hint">Précisez ce qui différencie la solution des pratiques existantes.</p>
+                <textarea id="innovationDifferentiation-e" name="innovationDifferentiation" rows="3" required placeholder="En quoi votre solution se différencie-t-elle ?">{{ v.innovationDifferentiation ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>4. Références, maturité et capacité de déploiement</h2>
+            <div class="form-group">
+                <label for="maturite-e">Maturité actuelle <span class="required">*</span></label>
+                <select id="maturite-e" name="maturite" required>
+                    <option value="">— Sélectionnez —</option>
+                    <option value="idée"                     {% if (v.maturite ?? '') == 'idée' %}selected{% endif %}>Idée</option>
+                    <option value="maquette"                 {% if (v.maturite ?? '') == 'maquette' %}selected{% endif %}>Maquette / prototype</option>
+                    <option value="MVP"                      {% if (v.maturite ?? '') == 'MVP' %}selected{% endif %}>MVP ou version testable</option>
+                    <option value="premières ventes"         {% if (v.maturite ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                    <option value="recherche de financement" {% if (v.maturite ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                    <option value="solution vendue"          {% if (v.maturite ?? '') == 'solution vendue' %}selected{% endif %}>Solution déjà vendue ou utilisée</option>
+                    <option value="démonstrateur"            {% if (v.maturite ?? '') == 'démonstrateur' %}selected{% endif %}>Démonstrateur existant</option>
+                    <option value="autre"                    {% if (v.maturite ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label for="references">Références clients, pilotes ou réalisations existantes <span class="required">*</span></label>
+                <p class="form-hint">Réalisations comparables, chiffres d'usage, retours clients ou démonstrations disponibles.</p>
+                <textarea id="references" name="references" rows="3" required placeholder="Pilotes existants, clients actuels, retours terrain…">{{ v.references ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>5. Proposition d'expérimentation Station T</h2>
+            <div class="form-group">
+                <label for="objectifPilote">Objectif du pilote proposé <span class="required">*</span></label>
+                <p class="form-hint">Quel test souhaitez-vous mener sur le territoire ? Quel résultat permettrait de conclure à un Go / No Go ?</p>
+                <textarea id="objectifPilote" name="objectifPilote" rows="3" required placeholder="Décrivez l'objectif du pilote.">{{ v.objectifPilote ?? '' }}</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="perimetreGeographique">Périmètre géographique <span class="required">*</span></label>
+                    <input type="text" id="perimetreGeographique" name="perimetreGeographique" value="{{ v.perimetreGeographique ?? '' }}" required placeholder="Ex : Cap d'Agde, Hérault">
+                </div>
+                <div class="form-group">
+                    <label for="dureeExperimentation">Durée souhaitée <span class="required">*</span></label>
+                    <input type="text" id="dureeExperimentation" name="dureeExperimentation" value="{{ v.dureeExperimentation ?? '' }}" required placeholder="Ex : 6 mois">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="publicsCibles">Publics ou utilisateurs ciblés <span class="required">*</span></label>
+                <input type="text" id="publicsCibles" name="publicsCibles" value="{{ v.publicsCibles ?? '' }}" required placeholder="Ex : professionnels du tourisme, habitants, touristes…">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="budgetMobiliser">Budget à mobiliser <span class="required">*</span></label>
+                    <input type="text" id="budgetMobiliser" name="budgetMobiliser" value="{{ v.budgetMobiliser ?? '' }}" required placeholder="Ex : 20 000 €">
+                </div>
+                <div class="form-group">
+                    <label for="moyensMobiliser">Moyens à mobiliser <span class="required">*</span></label>
+                    <input type="text" id="moyensMobiliser" name="moyensMobiliser" value="{{ v.moyensMobiliser ?? '' }}" required placeholder="Humains, techniques, matériels…">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="conditionsReussite">Conditions de réussite <span class="required">*</span></label>
+                <textarea id="conditionsReussite" name="conditionsReussite" rows="2" required placeholder="Quels facteurs sont indispensables pour réussir le test ?">{{ v.conditionsReussite ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="derouteOperationnel">Déroulé opérationnel envisagé <span class="required">*</span></label>
+                <p class="form-hint">Étapes du test, calendrier indicatif, responsabilités, modalités de suivi, livrables attendus.</p>
+                <textarea id="derouteOperationnel" name="derouteOperationnel" rows="3" required placeholder="Décrivez les étapes opérationnelles du pilote.">{{ v.derouteOperationnel ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>6. Partenaires, sites pilotes et appuis Station T</h2>
+            <div class="form-group">
+                <label for="partenairesRecherches">Partenaires ou sites pilotes recherchés <span class="required">*</span></label>
+                <p class="form-hint">Communes, CHR, hébergeurs, commerces, producteurs, ports, sites de loisirs, entreprises, associations, etc.</p>
+                <textarea id="partenairesRecherches" name="partenairesRecherches" rows="3" required placeholder="Quels acteurs locaux souhaitez-vous mobiliser ?">{{ v.partenairesRecherches ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Appuis attendus de Station T <span class="required">*</span></label>
+                <p class="form-hint">Cochez tous les appuis dont vous avez besoin.</p>
+                <div class="checkbox-grid">
+                    {% set appuisOptions = ['Mise en relation avec entreprises ou sites pilotes','Qualification du besoin terrain','Retours experts / mentors','Accès à un comité partenaires','Appui méthodologique au protocole de test','Valorisation / communication selon cadre validé','Orientation vers Gigamed Entreprise ou partenaires','Autre'] %}
+                    {% for option in appuisOptions %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="appuisStationT[]" value="{{ option }}" {% if v.appuisStationT is defined and option in (v.appuisStationT ?? []) %}checked{% endif %}>
+                        <span>{{ option }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="appuisStationT" id="appuisStationT-hidden" value="{{ v.appuisStationT ?? '' }}">
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>7. Modèle économique et conditions de déploiement</h2>
+            <div class="form-group">
+                <label for="modelEconomique-e">Modèle économique <span class="required">*</span></label>
+                <p class="form-hint">Commission, abonnement, prestation, licence, achat-revente, marge, freemium, subvention, autre.</p>
+                <textarea id="modelEconomique-e" name="modelEconomique" rows="3" required placeholder="Décrivez votre modèle économique.">{{ v.modelEconomique ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="conditionsDeploiement">Conditions de déploiement après pilote <span class="required">*</span></label>
+                <p class="form-hint">Coûts, ressources, engagements partenaires, seuils de viabilité, déploiement progressif ou extension territoriale.</p>
+                <textarea id="conditionsDeploiement" name="conditionsDeploiement" rows="3" required placeholder="Comment envisagez-vous le déploiement à grande échelle ?">{{ v.conditionsDeploiement ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>8. Impacts attendus et indicateurs</h2>
+            <div class="form-group">
+                <label for="impactAttendu">Impacts attendus <span class="required">*</span></label>
+                <p class="form-hint">Impacts territoriaux, économiques, sociaux ou environnementaux attendus et indicateurs de mesure envisagés.</p>
+                <textarea id="impactAttendu" name="impactAttendu" rows="3" required placeholder="Quels impacts concrets attendez-vous ?">{{ v.impactAttendu ?? '' }}</textarea>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>9. Engagements du candidat</h2>
+            <p class="form-hint" style="margin-bottom:1rem;">Tous les engagements suivants sont obligatoires pour valider le dossier.</p>
+            <div class="engagement-list">
+                <label class="engagement-item"><input type="checkbox" name="eng_certifie" value="1" required {% if (v.eng_certifie ?? '') == '1' %}checked{% endif %}><span>Je certifie avoir recueilli les informations du candidat et les saisir fidèlement.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_habilite" value="1" {% if (v.eng_habilite ?? '') == '1' %}checked{% endif %}><span>Le représentant de la structure est habilité à candidater.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_instruction" value="1" {% if (v.eng_instruction ?? '') == '1' %}checked{% endif %}><span>Le candidat accepte l'instruction de son dossier par les personnes habilitées.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_financier" value="1" {% if (v.eng_financier ?? '') == '1' %}checked{% endif %}><span>Le candidat comprend que l'intégration à Station T ne crée pas d'engagement financier automatique de l'Agglomération.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_cadrer" value="1" {% if (v.eng_cadrer ?? '') == '1' %}checked{% endif %}><span>Le candidat s'engage à cadrer le pilote avant tout test opérationnel.</span></label>
+                <label class="engagement-item"><input type="checkbox" name="eng_justificatifs" value="1" {% if (v.eng_justificatifs ?? '') == '1' %}checked{% endif %}><span>Le candidat fournira les justificatifs nécessaires avant l'expérimentation.</span></label>
+            </div>
+        </div>
+        <div class="form-card">
+            <h2>10. Pièces à joindre</h2>
+            <p class="form-hint" style="margin-bottom:1.25rem;">Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG — 10 Mo max par fichier.</p>
+            {% set docs = docsExistants ?? {} %}
+            <div class="form-group">
+                <label for="doc_presentation">Présentation de la structure et de la solution {% if docs['doc_presentation'] is not defined %}<span class="required">*</span>{% endif %}</label>
+                {{ _self.docActuel(docs['doc_presentation'] ?? null, 'doc_presentation', true) }}
+                {% if docs['doc_presentation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_presentation" name="doc_presentation" accept=".pdf,.ppt,.pptx,.doc,.docx" {% if docs['doc_presentation'] is not defined %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="doc_kbis">Extrait Kbis, avis SIRENE ou justificatif d'existence {% if docs['doc_kbis'] is not defined %}<span class="required">*</span>{% endif %}</label>
+                {{ _self.docActuel(docs['doc_kbis'] ?? null, 'doc_kbis', true) }}
+                {% if docs['doc_kbis'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_kbis" name="doc_kbis" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_kbis'] is not defined %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="doc_assurance">Attestation d'assurance responsabilité civile professionnelle {% if docs['doc_assurance'] is not defined %}<span class="required">*</span>{% endif %}</label>
+                {{ _self.docActuel(docs['doc_assurance'] ?? null, 'doc_assurance', true) }}
+                {% if docs['doc_assurance'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_assurance" name="doc_assurance" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_assurance'] is not defined %}required{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="doc_references">Références clients, pilotes ou démonstrations disponibles <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_references'] ?? null, 'doc_references', false) }}
+                {% if docs['doc_references'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_references" name="doc_references" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+            </div>
+            <div class="form-group">
+                <label for="doc_technique">Documentation technique ou fonctionnelle <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_technique'] ?? null, 'doc_technique', false) }}
+                {% if docs['doc_technique'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_technique" name="doc_technique" accept=".pdf,.doc,.docx">
+            </div>
+            <div class="form-group">
+                <label for="doc_financier">Éléments financiers ou modèle économique synthétique <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_financier'] ?? null, 'doc_financier', false) }}
+                {% if docs['doc_financier'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_financier" name="doc_financier" accept=".pdf,.xls,.xlsx,.doc,.docx">
+            </div>
+            <div class="form-group">
+                <label for="doc_rgpd">Conditions générales, politique de confidentialité ou documents RGPD <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_rgpd'] ?? null, 'doc_rgpd', false) }}
+                {% if docs['doc_rgpd'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_rgpd" name="doc_rgpd" accept=".pdf,.doc,.docx">
+            </div>
+            <div class="form-group">
+                <label for="doc_autre_e">Autre document utile <span class="optional">(optionnel)</span></label>
+                {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre_e', false) }}
+                {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+                <input type="file" id="doc_autre_e" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+            </div>
+        </div>
+    </div>
+    </div>
+    <div style="display:flex; gap:1rem; margin-bottom:3rem;">
+        <button type="submit" name="action" value="soumettre" class="btn btn-blue" style="flex:1; justify-content:center;">Soumettre la candidature</button>
+        <button type="submit" name="action" value="brouillon" formnovalidate class="btn" style="background:#f59e0b; color:#fff; border:none; white-space:nowrap;">Sauvegarder en brouillon</button>
+        <a href="{{ route('adminCandidatures') }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+    </div>
+
+{% else %}
+
+    <div class="form-card">
+        <h2>1. Identification du projet</h2>
+        <div class="form-group">
+            <label for="nomProjet">Nom du projet / de la solution <span class="required">*</span></label>
+            <input type="text" id="nomProjet" name="nomProjet" value="{{ v.nomProjet ?? '' }}" required placeholder="Ex : TouriConnect">
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>2. Cas d'usage ou besoin territorial traité</h2>
+        <div class="form-group">
+            <label>Entrée dans Station T <span class="required">*</span></label>
+            <div class="form-radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option1" {% if (v.entreeStationT ?? '') == 'option1' %}checked{% endif %} required onchange="majFiliere(this.value)">
+                    <span><strong>Option 01</strong> — Réponse à un besoin filière identifié</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option2" {% if (v.entreeStationT ?? '') == 'option2' %}checked{% endif %} onchange="majFiliere(this.value)">
+                    <span><strong>Option 02</strong> — Réponse à un cas d'usage interfilières Station T</span>
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="entreeStationT" value="option3" {% if (v.entreeStationT ?? '') == 'option3' %}checked{% endif %} onchange="majFiliere(this.value)">
+                    <span><strong>Option 03</strong> — Besoin complémentaire proposé par le candidat avec pertinence territoriale démontrée</span>
+                </label>
+            </div>
+        </div>
+        <input type="hidden" name="filiereCandidat" id="filiereCandidat-hidden" value="{{ v.filiereCandidat ?? '' }}">
+        <div id="bloc-filiere-option1" style="display:none;">
+            <div class="form-group">
+                <label for="filiere-select-opt1">Filière concernée <span class="required">*</span></label>
+                <select id="filiere-select-opt1">
+                    <option value="">— Sélectionnez une filière —</option>
+                    <option value="tourisme"    {% if (v.filiereCandidat ?? '') == 'tourisme' %}selected{% endif %}>Tourisme balnéaire &amp; durable</option>
+                    <option value="nautisme"    {% if (v.filiereCandidat ?? '') == 'nautisme' %}selected{% endif %}>Nautisme, plaisance &amp; fluvial</option>
+                    <option value="sport"       {% if (v.filiereCandidat ?? '') == 'sport' %}selected{% endif %}>Sport, bien-être &amp; loisirs</option>
+                    <option value="agriculture" {% if (v.filiereCandidat ?? '') == 'agriculture' %}selected{% endif %}>Agriculture &amp; viticulture</option>
+                    <option value="commerce"    {% if (v.filiereCandidat ?? '') == 'commerce' %}selected{% endif %}>Commerce &amp; artisanat</option>
+                    <option value="ville"       {% if (v.filiereCandidat ?? '') == 'ville' %}selected{% endif %}>Ville de demain &amp; services de proximité</option>
+                </select>
+            </div>
+        </div>
+        <div id="bloc-filiere-option2" style="display:none;">
+            <div class="form-group">
+                <label for="filiere-select-opt2">Cas d'usage interfilières <span class="required">*</span></label>
+                <select id="filiere-select-opt2">
+                    <option value="">— Sélectionnez un cas d'usage —</option>
+                    {% if isEntreprise %}
+                    <option value="Produits du terroir et vins"                        {% if (v.filiereCandidat ?? '') == 'Produits du terroir et vins' %}selected{% endif %}>Produits du terroir &amp; vins</option>
+                    <option value="Coeur de ville commerçant connecté"                 {% if (v.filiereCandidat ?? '') == 'Coeur de ville commerçant connecté' %}selected{% endif %}>Cœur de ville commerçant connecté</option>
+                    <option value="Mobilité douce vélo et accès aux services"          {% if (v.filiereCandidat ?? '') == 'Mobilité douce vélo et accès aux services' %}selected{% endif %}>Mobilité douce, vélo et accès aux services</option>
+                    <option value="Clubs et associations sportives"                    {% if (v.filiereCandidat ?? '') == 'Clubs et associations sportives' %}selected{% endif %}>Clubs et associations sportives</option>
+                    <option value="Plateforme RH territorial travailleurs saisonniers" {% if (v.filiereCandidat ?? '') == 'Plateforme RH territorial travailleurs saisonniers' %}selected{% endif %}>Plateforme RH territorial / travailleurs saisonniers</option>
+                    {% else %}
+                    <option value="Produits du terroir et vins"                        {% if (v.filiereCandidat ?? '') == 'Produits du terroir et vins' %}selected{% endif %}>Produits du terroir &amp; vins</option>
+                    <option value="Plateforme travailleurs saisonniers"                {% if (v.filiereCandidat ?? '') == 'Plateforme travailleurs saisonniers' %}selected{% endif %}>Plateforme travailleurs saisonniers</option>
+                    <option value="Mobilité douce vélo et accès aux services"          {% if (v.filiereCandidat ?? '') == 'Mobilité douce vélo et accès aux services' %}selected{% endif %}>Mobilité douce, vélo et accès aux services</option>
+                    <option value="Clubs et associations sportives"                    {% if (v.filiereCandidat ?? '') == 'Clubs et associations sportives' %}selected{% endif %}>Clubs et associations sportives</option>
+                    <option value="Commerces augmentés"                                {% if (v.filiereCandidat ?? '') == 'Commerces augmentés' %}selected{% endif %}>Commerces augmentés</option>
+                    {% endif %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="besoinTraite">Besoin, irritant ou opportunité traité <span class="required">*</span></label>
+            <p class="form-hint">Décrivez le problème concret du territoire, des entreprises, des filières, des habitants ou des visiteurs auquel votre solution répond.</p>
+            <textarea id="besoinTraite" name="besoinTraite" rows="4" required placeholder="Quel problème concret adressez-vous ?">{{ v.besoinTraite ?? '' }}</textarea>
+        </div>
+    </div>
+
+    {% if not isEntreprise %}
+
+    <div class="form-card">
+        <h2>3. Résumé du projet</h2>
+        <div class="form-group">
+            <label for="pitchCourt">Pitch court du projet <span class="required">*</span></label>
+            <p class="form-hint">En quelques lignes : le problème traité, la solution proposée, les clients visés et l'impact attendu.</p>
+            <textarea id="pitchCourt" name="pitchCourt" rows="3" required placeholder="Décrivez votre projet en 3-4 phrases.">{{ v.pitchCourt ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="problemeIdentifie">Problème ou besoin identifié <span class="required">*</span></label>
+            <p class="form-hint">Quel problème concret traitez-vous ? Pour qui ? Sur quelle base l'avez-vous identifié ?</p>
+            <textarea id="problemeIdentifie" name="problemeIdentifie" rows="3" required placeholder="Décrivez le problème et sa réalité terrain.">{{ v.problemeIdentifie ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="descriptionProjet">Solution proposée <span class="required">*</span></label>
+            <p class="form-hint">Décrivez le produit, service, application, plateforme, équipement ou méthode proposée.</p>
+            <textarea id="descriptionProjet" name="descriptionProjet" rows="4" required placeholder="Décrivez votre solution en détail.">{{ v.descriptionProjet ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>4. Caractère innovant et différenciation</h2>
+        <div class="form-group">
+            <label for="innovationDifferentiation">Innovation ou différenciation <span class="required">*</span></label>
+            <p class="form-hint">Ce qui est nouveau, différenciant ou plus performant : usage, technologie, modèle, distribution, service, impact.</p>
+            <textarea id="innovationDifferentiation" name="innovationDifferentiation" rows="3" required placeholder="En quoi votre solution est-elle innovante ?">{{ v.innovationDifferentiation ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="concurrence">Concurrence et alternatives existantes <span class="required">*</span></label>
+            <p class="form-hint">Quelles solutions les clients utilisent-ils aujourd'hui ? Pourquoi votre approche peut-elle être meilleure ou complémentaire ?</p>
+            <textarea id="concurrence" name="concurrence" rows="3" required placeholder="Décrivez les alternatives et votre positionnement.">{{ v.concurrence ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>5. Marché, clients et usages</h2>
+        <div class="form-group">
+            <label for="clientsCibles">Clients ou utilisateurs cibles <span class="required">*</span></label>
+            <p class="form-hint">Segments prioritaires : particuliers, entreprises, collectivités, touristes, professionnels, filières concernées.</p>
+            <textarea id="clientsCibles" name="clientsCibles" rows="3" required placeholder="Qui sont vos utilisateurs cibles ?">{{ v.clientsCibles ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="preuvesBesoin">Preuves de besoin déjà obtenues <span class="required">*</span></label>
+            <p class="form-hint">Entretiens, questionnaires, lettres d'intérêt, tests, précommandes, premiers clients, retours terrain.</p>
+            <textarea id="preuvesBesoin" name="preuvesBesoin" rows="3" required placeholder="Quelles preuves avez-vous du besoin marché ?">{{ v.preuvesBesoin ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>6. Maturité de la solution</h2>
+        <div class="form-group">
+            <label for="maturite">Niveau de maturité actuel <span class="required">*</span></label>
+            <select id="maturite" name="maturite" required>
+                <option value="">— Sélectionnez —</option>
+                <option value="idée"                    {% if (v.maturite ?? '') == 'idée' %}selected{% endif %}>Idée cadrée</option>
+                <option value="maquette"                {% if (v.maturite ?? '') == 'maquette' %}selected{% endif %}>Maquette / prototype</option>
+                <option value="MVP"                     {% if (v.maturite ?? '') == 'MVP' %}selected{% endif %}>MVP ou version testable</option>
+                <option value="premières ventes"        {% if (v.maturite ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                <option value="recherche de financement"{% if (v.maturite ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                <option value="solution vendue"         {% if (v.maturite ?? '') == 'solution vendue' %}selected{% endif %}>Solution déjà utilisée par des clients</option>
+                <option value="démonstrateur"           {% if (v.maturite ?? '') == 'démonstrateur' %}selected{% endif %}>Déploiement commercial en cours</option>
+                <option value="autre"                   {% if (v.maturite ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label for="etatAvancement">État d'avancement technique ou opérationnel <span class="required">*</span></label>
+            <p class="form-hint">Ce qui existe déjà, ce qui reste à développer, principaux jalons à 3, 6 et 12 mois.</p>
+            <textarea id="etatAvancement" name="etatAvancement" rows="3" required placeholder="Décrivez l'avancement et les prochaines étapes.">{{ v.etatAvancement ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>7. Modèle économique et financement</h2>
+        <div class="form-group">
+            <label for="modelEconomique">Modèle économique envisagé <span class="required">*</span></label>
+            <p class="form-hint">Vente directe, abonnement, commission, licence, prestation, freemium, achat-revente, autre.</p>
+            <textarea id="modelEconomique" name="modelEconomique" rows="3" required placeholder="Comment votre solution génère-t-elle de la valeur économique ?">{{ v.modelEconomique ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="besoinsFinanciers">Besoins financiers et ressources disponibles <span class="required">*</span></label>
+            <p class="form-hint">Budget déjà mobilisé, besoins à venir, aides sollicitées, levées de fonds prévues, autofinancement.</p>
+            <textarea id="besoinsFinanciers" name="besoinsFinanciers" rows="3" required placeholder="Quels sont vos besoins financiers ?">{{ v.besoinsFinanciers ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>8. Équipe et capacité d'exécution</h2>
+        <div class="form-group">
+            <label for="equipe">Composition de l'équipe <span class="required">*</span></label>
+            <p class="form-hint">Nom / prénom — Rôle dans le projet — Compétences / disponibilité</p>
+            <textarea id="equipe" name="equipe" rows="4" required placeholder="Ex : Jean Dupont — Développeur — disponible 5j/sem">{{ v.equipe ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="forcesEquipe">Forces de l'équipe et besoins de renfort <span class="required">*</span></label>
+            <p class="form-hint">Compétences clés, disponibilité, manques identifiés, recrutements ou partenaires nécessaires.</p>
+            <textarea id="forcesEquipe" name="forcesEquipe" rows="3" required placeholder="Quelles sont vos forces et vos besoins de renfort ?">{{ v.forcesEquipe ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>9. Besoins d'accompagnement Gigamed Innovation</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="programmeGigamed">Programme souhaité <span class="required">*</span></label>
+                <select id="programmeGigamed" name="programmeGigamed" required>
+                    <option value="">— Sélectionnez —</option>
+                    <option value="incubation"   {% if (v.programmeGigamed ?? '') == 'incubation' %}selected{% endif %}>Incubation — structurer le projet et valider le besoin</option>
+                    <option value="amorçage"     {% if (v.programmeGigamed ?? '') == 'amorçage' %}selected{% endif %}>Amorçage — tester le marché et générer les premiers signaux commerciaux</option>
+                    <option value="accélération" {% if (v.programmeGigamed ?? '') == 'accélération' %}selected{% endif %}>Accélération — structurer la croissance et le développement</option>
+                    <option value="à déterminer" {% if (v.programmeGigamed ?? '') == 'à déterminer' %}selected{% endif %}>À déterminer — je souhaite être orienté par le comité d'instruction</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="niveauAccompagnement">Niveau d'accompagnement <span class="required">*</span></label>
+                <select id="niveauAccompagnement" name="niveauAccompagnement" required>
+                    <option value="">— Sélectionnez —</option>
+                    <option value="essentiel"    {% if (v.niveauAccompagnement ?? '') == 'essentiel' %}selected{% endif %}>Essentiel</option>
+                    <option value="renforcé"     {% if (v.niveauAccompagnement ?? '') == 'renforcé' %}selected{% endif %}>Renforcé</option>
+                    <option value="à déterminer" {% if (v.niveauAccompagnement ?? '') == 'à déterminer' %}selected{% endif %}>À déterminer après instruction</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label>Besoins prioritaires <span class="required">*</span></label>
+            <p class="form-hint">Cochez tous les besoins qui s'appliquent à votre situation.</p>
+            <div class="checkbox-grid">
+                {% set besoinsOptions = ['Clarification de la proposition de valeur','Validation du besoin marché','Go-to-market et acquisition client','Structuration commerciale','Business model et stratégie','Préparation financement / pitch deck','Tests utilisateurs / clients',"Accès à des terrains d'expérimentation",'Mise en relation partenaires / mentors','Hébergement / espace de travail','Autre'] %}
+                {% for option in besoinsOptions %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="besoinsPrioritaires[]" value="{{ option }}" {% if v.besoinsPrioritaires is defined and option in (v.besoinsPrioritaires ?? []) %}checked{% endif %}>
+                    <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="objectifAccompagnement">Objectifs attendus de l'accompagnement <span class="required">*</span></label>
+            <p class="form-hint">Quels résultats concrets souhaitez-vous obtenir à l'issue de l'accompagnement ?</p>
+            <textarea id="objectifAccompagnement" name="objectifAccompagnement" rows="3" required placeholder="Décrivez vos objectifs.">{{ v.objectifAccompagnement ?? '' }}</textarea>
+        </div>
+    </div>
+
+    {% else %}
+    <div class="form-card">
+        <h2>3. Solution proposée</h2>
+        <div class="form-group">
+            <label for="descriptionProjet">Description synthétique de la solution <span class="required">*</span></label>
+            <p class="form-hint">Produit, service, plateforme, équipement, méthode, outil numérique, organisation ou dispositif proposé.</p>
+            <textarea id="descriptionProjet" name="descriptionProjet" rows="4" required placeholder="Décrivez votre solution.">{{ v.descriptionProjet ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="valeurAjoutee">Valeur ajoutée pour les utilisateurs ou professionnels <span class="required">*</span></label>
+            <p class="form-hint">Bénéfices concrets : gain de temps, ventes, simplicité, sécurité, qualité de service, impact local.</p>
+            <textarea id="valeurAjoutee" name="valeurAjoutee" rows="3" required placeholder="Quelle valeur ajoutée concrète apportez-vous ?">{{ v.valeurAjoutee ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="innovationDifferentiation">Innovation ou différenciation <span class="required">*</span></label>
+            <p class="form-hint">Précisez ce qui différencie la solution des pratiques existantes.</p>
+            <textarea id="innovationDifferentiation" name="innovationDifferentiation" rows="3" required placeholder="En quoi votre solution se différencie-t-elle ?">{{ v.innovationDifferentiation ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>4. Références, maturité et capacité de déploiement</h2>
+        <div class="form-group">
+            <label for="maturite">Maturité actuelle <span class="required">*</span></label>
+            <select id="maturite" name="maturite" required>
+                <option value="">— Sélectionnez —</option>
+                <option value="idée"                    {% if (v.maturite ?? '') == 'idée' %}selected{% endif %}>Idée</option>
+                <option value="maquette"                {% if (v.maturite ?? '') == 'maquette' %}selected{% endif %}>Maquette / prototype</option>
+                <option value="MVP"                     {% if (v.maturite ?? '') == 'MVP' %}selected{% endif %}>MVP ou version testable</option>
+                <option value="premières ventes"        {% if (v.maturite ?? '') == 'premières ventes' %}selected{% endif %}>Premières ventes</option>
+                <option value="recherche de financement"{% if (v.maturite ?? '') == 'recherche de financement' %}selected{% endif %}>Recherche de financement</option>
+                <option value="solution vendue"         {% if (v.maturite ?? '') == 'solution vendue' %}selected{% endif %}>Solution déjà vendue ou utilisée</option>
+                <option value="démonstrateur"           {% if (v.maturite ?? '') == 'démonstrateur' %}selected{% endif %}>Démonstrateur existant</option>
+                <option value="autre"                   {% if (v.maturite ?? '') == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-top:1rem;">
+            <label for="references">Références clients, pilotes ou réalisations existantes <span class="required">*</span></label>
+            <p class="form-hint">Réalisations comparables, chiffres d'usage, retours clients ou démonstrations disponibles.</p>
+            <textarea id="references" name="references" rows="3" required placeholder="Pilotes existants, clients actuels, retours terrain…">{{ v.references ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>5. Proposition d'expérimentation Station T</h2>
+        <div class="form-group">
+            <label for="objectifPilote">Objectif du pilote proposé <span class="required">*</span></label>
+            <p class="form-hint">Quel test souhaitez-vous mener sur le territoire ? Quel résultat permettrait de conclure à un Go / No Go ?</p>
+            <textarea id="objectifPilote" name="objectifPilote" rows="3" required placeholder="Décrivez l'objectif du pilote.">{{ v.objectifPilote ?? '' }}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="perimetreGeographique">Périmètre géographique <span class="required">*</span></label>
+                <input type="text" id="perimetreGeographique" name="perimetreGeographique" value="{{ v.perimetreGeographique ?? '' }}" required placeholder="Ex : Cap d'Agde, Hérault">
+            </div>
+            <div class="form-group">
+                <label for="dureeExperimentation">Durée souhaitée <span class="required">*</span></label>
+                <input type="text" id="dureeExperimentation" name="dureeExperimentation" value="{{ v.dureeExperimentation ?? '' }}" required placeholder="Ex : 6 mois">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="publicsCibles">Publics ou utilisateurs ciblés <span class="required">*</span></label>
+            <input type="text" id="publicsCibles" name="publicsCibles" value="{{ v.publicsCibles ?? '' }}" required placeholder="Ex : professionnels du tourisme, habitants, touristes…">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="budgetMobiliser">Budget à mobiliser <span class="required">*</span></label>
+                <input type="text" id="budgetMobiliser" name="budgetMobiliser" value="{{ v.budgetMobiliser ?? '' }}" required placeholder="Ex : 20 000 €">
+            </div>
+            <div class="form-group">
+                <label for="moyensMobiliser">Moyens à mobiliser <span class="required">*</span></label>
+                <input type="text" id="moyensMobiliser" name="moyensMobiliser" value="{{ v.moyensMobiliser ?? '' }}" required placeholder="Humains, techniques, matériels…">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="conditionsReussite">Conditions de réussite <span class="required">*</span></label>
+            <textarea id="conditionsReussite" name="conditionsReussite" rows="2" required placeholder="Quels facteurs sont indispensables pour réussir le test ?">{{ v.conditionsReussite ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="derouteOperationnel">Déroulé opérationnel envisagé <span class="required">*</span></label>
+            <p class="form-hint">Étapes du test, calendrier indicatif, responsabilités, modalités de suivi, livrables attendus.</p>
+            <textarea id="derouteOperationnel" name="derouteOperationnel" rows="3" required placeholder="Décrivez les étapes opérationnelles du pilote.">{{ v.derouteOperationnel ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>6. Partenaires, sites pilotes et appuis Station T</h2>
+        <div class="form-group">
+            <label for="partenairesRecherches">Partenaires ou sites pilotes recherchés <span class="required">*</span></label>
+            <p class="form-hint">Communes, CHR, hébergeurs, commerces, producteurs, ports, sites de loisirs, entreprises, associations, etc.</p>
+            <textarea id="partenairesRecherches" name="partenairesRecherches" rows="3" required placeholder="Quels acteurs locaux souhaitez-vous mobiliser ?">{{ v.partenairesRecherches ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Appuis attendus de Station T <span class="required">*</span></label>
+            <p class="form-hint">Cochez tous les appuis dont vous avez besoin.</p>
+            <div class="checkbox-grid">
+                {% set appuisOptions = ['Mise en relation avec entreprises ou sites pilotes','Qualification du besoin terrain','Retours experts / mentors','Accès à un comité partenaires','Appui méthodologique au protocole de test','Valorisation / communication selon cadre validé','Orientation vers Gigamed Entreprise ou partenaires','Autre'] %}
+                {% for option in appuisOptions %}
+                <label class="checkbox-label">
+                    <input type="checkbox" name="appuisStationT[]" value="{{ option }}" {% if v.appuisStationT is defined and option in (v.appuisStationT ?? []) %}checked{% endif %}>
+                    <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="appuisStationT" id="appuisStationT-hidden" value="{{ v.appuisStationT ?? '' }}">
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>7. Modèle économique et conditions de déploiement</h2>
+        <div class="form-group">
+            <label for="modelEconomique">Modèle économique <span class="required">*</span></label>
+            <p class="form-hint">Commission, abonnement, prestation, licence, achat-revente, marge, freemium, subvention, autre.</p>
+            <textarea id="modelEconomique" name="modelEconomique" rows="3" required placeholder="Décrivez votre modèle économique.">{{ v.modelEconomique ?? '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label for="conditionsDeploiement">Conditions de déploiement après pilote <span class="required">*</span></label>
+            <p class="form-hint">Coûts, ressources, engagements partenaires, seuils de viabilité, déploiement progressif ou extension territoriale.</p>
+            <textarea id="conditionsDeploiement" name="conditionsDeploiement" rows="3" required placeholder="Comment envisagez-vous le déploiement à grande échelle ?">{{ v.conditionsDeploiement ?? '' }}</textarea>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>8. Impacts attendus et indicateurs</h2>
+        <div class="form-group">
+            <label for="impactAttendu">Impacts attendus <span class="required">*</span></label>
+            <p class="form-hint">Impacts territoriaux, économiques, sociaux ou environnementaux attendus et indicateurs de mesure envisagés.</p>
+            <textarea id="impactAttendu" name="impactAttendu" rows="3" required placeholder="Quels impacts concrets attendez-vous ?">{{ v.impactAttendu ?? '' }}</textarea>
+        </div>
+    </div>
+
+    {% endif %}
+    <div class="form-card">
+        <h2>{% if isEntreprise %}9{% else %}10{% endif %}. Engagements du candidat</h2>
+        <p class="form-hint" style="margin-bottom:1rem;">Tous les engagements suivants sont obligatoires pour valider votre dossier.</p>
+        {% if not isEntreprise %}
+        <div class="engagement-list">
+            <label class="engagement-item"><input type="checkbox" name="eng_certifie" value="1" required {% if (v.eng_certifie ?? '') == '1' %}checked{% endif %}><span>Je certifie l'exactitude des informations transmises.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_suivi" value="1" required {% if (v.eng_suivi ?? '') == '1' %}checked{% endif %}><span>Je m'engage à participer aux rendez-vous de suivi convenus.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_instruction" value="1" required {% if (v.eng_instruction ?? '') == '1' %}checked{% endif %}><span>J'accepte que mon dossier soit instruit par les personnes habilitées.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_reorientation" value="1" required {% if (v.eng_reorientation ?? '') == '1' %}checked{% endif %}><span>J'accepte d'être réorienté vers un autre dispositif si plus pertinent.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_changement" value="1" required {% if (v.eng_changement ?? '') == '1' %}checked{% endif %}><span>Je m'engage à signaler tout changement majeur du projet.</span></label>
+        </div>
+        {% else %}
+        <div class="engagement-list">
+            <label class="engagement-item"><input type="checkbox" name="eng_certifie" value="1" required {% if (v.eng_certifie ?? '') == '1' %}checked{% endif %}><span>Je certifie l'exactitude des informations transmises.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_habilite" value="1" required {% if (v.eng_habilite ?? '') == '1' %}checked{% endif %}><span>Je suis habilité à représenter la structure candidate.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_instruction" value="1" required {% if (v.eng_instruction ?? '') == '1' %}checked{% endif %}><span>J'accepte l'instruction de mon dossier par les personnes habilitées.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_financier" value="1" required {% if (v.eng_financier ?? '') == '1' %}checked{% endif %}><span>Je comprends que l'intégration à Station T ne crée pas d'engagement financier automatique de l'Agglomération.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_cadrer" value="1" required {% if (v.eng_cadrer ?? '') == '1' %}checked{% endif %}><span>Je m'engage à cadrer le pilote avant tout test opérationnel.</span></label>
+            <label class="engagement-item"><input type="checkbox" name="eng_justificatifs" value="1" required {% if (v.eng_justificatifs ?? '') == '1' %}checked{% endif %}><span>Je fournirai les justificatifs nécessaires avant l'expérimentation.</span></label>
+        </div>
+        {% endif %}
+    </div>
+
+    {% set docs = docsExistants ?? {} %}
+    <div class="form-card">
+        <h2>{% if isEntreprise %}10{% else %}11{% endif %}. Pièces à joindre</h2>
+        <p class="form-hint" style="margin-bottom:1.25rem;">Formats acceptés : PDF, Word, Excel, PowerPoint, JPG, PNG — 10 Mo max par fichier.</p>
+
+        {% if not isEntreprise %}
+        <div class="form-group">
+            <label for="doc_cv">CV du ou des porteurs de projet {% if docs['doc_cv'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_cv'] ?? null, 'doc_cv', true) }}
+            {% if docs['doc_cv'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_cv" name="doc_cv" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" {% if docs['doc_cv'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_pitch">Pitch deck ou présentation courte</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_pitch'] ?? null, 'doc_pitch', false) }}
+            {% if docs['doc_pitch'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_pitch" name="doc_pitch" accept=".pdf,.ppt,.pptx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_business_plan">Business plan ou note économique</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_business_plan'] ?? null, 'doc_business_plan', false) }}
+            {% if docs['doc_business_plan'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_business_plan" name="doc_business_plan" accept=".pdf,.doc,.docx,.xls,.xlsx">
+        </div>
+        <div class="form-group">
+            <label for="doc_previsionnel">Prévisionnel financier</label>
+            <p class="form-hint">Si disponible.</p>
+            {{ _self.docActuel(docs['doc_previsionnel'] ?? null, 'doc_previsionnel', false) }}
+            {% if docs['doc_previsionnel'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_previsionnel" name="doc_previsionnel" accept=".pdf,.xls,.xlsx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_immatriculation">Justificatif d'immatriculation</label>
+            <p class="form-hint">Si la structure est déjà créée.</p>
+            {{ _self.docActuel(docs['doc_immatriculation'] ?? null, 'doc_immatriculation', false) }}
+            {% if docs['doc_immatriculation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_immatriculation" name="doc_immatriculation" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_preuves">Éléments de preuve</label>
+            <p class="form-hint">Lettres d'intérêt, tests, devis, retours clients, prototypes, liens de démonstration.</p>
+            {{ _self.docActuel(docs['doc_preuves'] ?? null, 'doc_preuves', false) }}
+            {% if docs['doc_preuves'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_preuves" name="doc_preuves" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_autre">Autre document utile</label>
+            {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre', false) }}
+            {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_autre" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+        </div>
+        {% else %}
+        <div class="form-group">
+            <label for="doc_presentation">Présentation de la structure et de la solution {% if docs['doc_presentation'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_presentation'] ?? null, 'doc_presentation', true) }}
+            {% if docs['doc_presentation'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_presentation" name="doc_presentation" accept=".pdf,.ppt,.pptx,.doc,.docx" {% if docs['doc_presentation'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_kbis">Extrait Kbis, avis SIRENE ou justificatif d'existence {% if docs['doc_kbis'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_kbis'] ?? null, 'doc_kbis', true) }}
+            {% if docs['doc_kbis'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_kbis" name="doc_kbis" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_kbis'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_assurance">Attestation d'assurance responsabilité civile professionnelle {% if docs['doc_assurance'] is not defined %}<span class="required">*</span>{% endif %}</label>
+            {{ _self.docActuel(docs['doc_assurance'] ?? null, 'doc_assurance', true) }}
+            {% if docs['doc_assurance'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_assurance" name="doc_assurance" accept=".pdf,.jpg,.jpeg,.png" {% if docs['doc_assurance'] is not defined %}required{% endif %}>
+        </div>
+        <div class="form-group">
+            <label for="doc_references">Références clients, pilotes ou démonstrations disponibles</label>
+            {{ _self.docActuel(docs['doc_references'] ?? null, 'doc_references', false) }}
+            {% if docs['doc_references'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_references" name="doc_references" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+        </div>
+        <div class="form-group">
+            <label for="doc_technique">Documentation technique ou fonctionnelle</label>
+            {{ _self.docActuel(docs['doc_technique'] ?? null, 'doc_technique', false) }}
+            {% if docs['doc_technique'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_technique" name="doc_technique" accept=".pdf,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_financier">Éléments financiers ou modèle économique synthétique</label>
+            {{ _self.docActuel(docs['doc_financier'] ?? null, 'doc_financier', false) }}
+            {% if docs['doc_financier'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_financier" name="doc_financier" accept=".pdf,.xls,.xlsx,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_rgpd">Conditions générales, politique de confidentialité ou documents RGPD</label>
+            <p class="form-hint">Le cas échéant.</p>
+            {{ _self.docActuel(docs['doc_rgpd'] ?? null, 'doc_rgpd', false) }}
+            {% if docs['doc_rgpd'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_rgpd" name="doc_rgpd" accept=".pdf,.doc,.docx">
+        </div>
+        <div class="form-group">
+            <label for="doc_autre">Autre document utile</label>
+            {{ _self.docActuel(docs['doc_autre'] ?? null, 'doc_autre', false) }}
+            {% if docs['doc_autre'] is defined %}<p class="form-hint doc-hint" style="color:#059669;">Laisser vide pour conserver, ou choisir un nouveau fichier pour remplacer.</p>{% endif %}
+            <input type="file" id="doc_autre" name="doc_autre" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png">
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+        <button type="submit" name="action" value="deposer" class="btn btn-blue" style="flex:1; justify-content:center;">Déposer ma candidature</button>
+        <button type="submit" name="action" value="brouillon" formnovalidate class="btn" style="background:#f59e0b; color:#fff; border:none; white-space:nowrap;">Sauvegarder en brouillon</button>
+        <a href="{{ ami is not null ? route('listeAmi') : route('listeChallenges') }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+    </div>
+
+{% endif %}
+</form>
+</div>
+
+{% if isModification %}
+<script>
+function supprimerDoc(idDoc, url, btn) {
+    if (!confirm('Supprimer ce fichier ?')) return;
+    btn.disabled = true; btn.textContent = '…';
+    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            var inputName = btn.dataset.input;
+            var isRequired = btn.dataset.required === '1';
+            var currentDiv = document.getElementById('doc-current-' + inputName);
+            if (currentDiv) currentDiv.remove();
+            var group = btn.closest('.form-group');
+            if (group) {
+                group.querySelectorAll('p.doc-hint').forEach(function(h) { h.remove(); });
+                if (isRequired) {
+                    var input = document.getElementById(inputName);
+                    if (input) input.setAttribute('required', '');
+                    var label = group.querySelector('label');
+                    if (label && !label.querySelector('.required')) { label.insertAdjacentHTML('beforeend', ' <span class="required">*</span>'); }
+                }
+            }
+        } else { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur lors de la suppression.'); }
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur réseau.'); });
+}
+function syncFiliereMod() {
+    var hidden = document.getElementById('filiereCandidat-mod-hidden');
+    if (!hidden) return;
+    var b1 = document.getElementById('mod-bloc-filiere-option1');
+    var b2 = document.getElementById('mod-bloc-filiere-option2');
+    var sel1 = document.getElementById('mod-filiere-select-opt1');
+    var sel2 = document.getElementById('mod-filiere-select-opt2');
+    if (b1 && b1.style.display !== 'none' && sel1) {
+        hidden.value = sel1.value;
+    } else if (b2 && b2.style.display !== 'none' && sel2) {
+        hidden.value = sel2.value;
+    } else {
+        hidden.value = '';
+    }
+}
+
+function majFiliereMod(option) {
+    var b1 = document.getElementById('mod-bloc-filiere-option1');
+    var b2 = document.getElementById('mod-bloc-filiere-option2');
+    if (b1) b1.style.display = (option === 'option1') ? '' : 'none';
+    if (b2) b2.style.display = (option === 'option2') ? '' : 'none';
+    syncFiliereMod();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var checked = document.querySelector('input[name="entreeStationT"]:checked');
+    if (checked) majFiliereMod(checked.value);
+    var sel1 = document.getElementById('mod-filiere-select-opt1');
+    if (sel1) sel1.addEventListener('change', syncFiliereMod);
+    var sel2 = document.getElementById('mod-filiere-select-opt2');
+    if (sel2) sel2.addEventListener('change', syncFiliereMod);
+
+    document.querySelectorAll('input[type="file"]').forEach(function(input) {
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button'; clearBtn.textContent = '✕ Effacer la sélection'; clearBtn.className = 'abtn abtn-red';
+        clearBtn.style.cssText = 'display:none; padding:.2rem .55rem; font-size:.78rem; margin-top:.35rem;';
+        input.after(clearBtn);
+        input.addEventListener('change', function() { clearBtn.style.display = this.files.length ? 'inline-block' : 'none'; });
+        clearBtn.addEventListener('click', function() { input.value = ''; this.style.display = 'none'; });
+    });
+    var appuisCheckboxes = document.querySelectorAll('input[name="appuisStationT[]"]');
+    var appuisHidden = document.getElementById('appuisStationT-mod-hidden');
+    if (appuisCheckboxes.length && appuisHidden) {
+        function syncAppuisMod() {
+            appuisHidden.value = Array.from(appuisCheckboxes).filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }).join(', ');
+        }
+        appuisCheckboxes.forEach(function(cb) { cb.addEventListener('change', syncAppuisMod); });
+        syncAppuisMod();
+    }
+});
+</script>
+{% elseif isAdmin and not isModification %}
+<script>
+function supprimerDoc(idDoc, url, btn) {
+    if (!confirm('Supprimer ce fichier ?')) return;
+    btn.disabled = true; btn.textContent = '…';
+    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            var inputId = btn.dataset.input;
+            var isRequired = btn.dataset.required === '1';
+            var currentDiv = document.getElementById('doc-current-' + inputId);
+            if (currentDiv) currentDiv.remove();
+            var group = btn.closest('.form-group');
+            if (group) {
+                group.querySelectorAll('p.doc-hint').forEach(function(h) { h.remove(); });
+                if (isRequired) {
+                    var input = document.getElementById(inputId);
+                    if (input) input.setAttribute('required', '');
+                    var label = group.querySelector('label');
+                    if (label && !label.querySelector('.required')) { label.insertAdjacentHTML('beforeend', ' <span class="required">*</span>'); }
+                }
+            }
+        } else { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur lors de la suppression.'); }
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur réseau.'); });
+}
+
+var roleActuel = '';
+
+function majRole(select) {
+    var role = select.options[select.selectedIndex].dataset.role;
+    roleActuel = role;
+    var isEntreprise = (role === 'entreprise');
+    var formContent = document.getElementById('form-content');
+    if (!role || role === '') { formContent.style.display = 'none'; return; }
+    formContent.style.display = '';
+    document.querySelectorAll('.section-startup').forEach(function(el) {
+        el.style.display = isEntreprise ? 'none' : '';
+        el.querySelectorAll('input, textarea, select').forEach(function(i) { i.disabled = isEntreprise; });
+    });
+    document.querySelectorAll('.section-entreprise').forEach(function(el) {
+        el.style.display = isEntreprise ? '' : 'none';
+        el.querySelectorAll('input, textarea, select').forEach(function(i) { i.disabled = !isEntreprise; });
+    });
+    majFiliere(getEntreeChecked());
+}
+
+function getEntreeChecked() {
+    var checked = document.querySelector('input[name="entreeStationT"]:checked');
+    return checked ? checked.value : '';
+}
+
+function majFiliere(option) {
+    var isEntreprise = (roleActuel === 'entreprise');
+    document.getElementById('bloc-filiere-option1').style.display = (option === 'option1') ? 'block' : 'none';
+    document.getElementById('bloc-filiere-option2-entreprise').style.display = (option === 'option2' && isEntreprise) ? 'block' : 'none';
+    document.getElementById('bloc-filiere-option2-startup').style.display = (option === 'option2' && !isEntreprise) ? 'block' : 'none';
+    if (option === 'option3') { document.getElementById('filiereCandidat-hidden').value = ''; }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.section-role').forEach(function(el) {
+        el.querySelectorAll('input, textarea, select').forEach(function(i) { i.disabled = true; });
+    });
+    var selectUser = document.getElementById('idUtilisateur');
+    if (selectUser.value && selectUser.value !== '0') { majRole(selectUser); }
+    var sel1 = document.getElementById('filiere-select-opt1');
+    if (sel1) sel1.addEventListener('change', function() { document.getElementById('filiereCandidat-hidden').value = this.value; });
+    var sel2e = document.getElementById('filiere-select-opt2-e');
+    if (sel2e) sel2e.addEventListener('change', function() { document.getElementById('filiereCandidat-hidden').value = this.value; });
+    var sel2s = document.getElementById('filiere-select-opt2-s');
+    if (sel2s) sel2s.addEventListener('change', function() { document.getElementById('filiereCandidat-hidden').value = this.value; });
+    var appuisCheckboxes = document.querySelectorAll('input[name="appuisStationT[]"]');
+    var appuisHidden = document.getElementById('appuisStationT-hidden');
+    if (appuisCheckboxes.length && appuisHidden) {
+        function syncAppuis() {
+            appuisHidden.value = Array.from(appuisCheckboxes).filter(function(cb) { return cb.checked; }).map(function(cb) { return cb.value; }).join(', ');
+        }
+        appuisCheckboxes.forEach(function(cb) { cb.addEventListener('change', syncAppuis); });
+        syncAppuis();
+    }
+    var checked = document.querySelector('input[name="entreeStationT"]:checked');
+    if (checked) majFiliere(checked.value);
+
+    document.querySelectorAll('input[type="file"]').forEach(function(input) {
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button'; clearBtn.textContent = '✕ Effacer la sélection'; clearBtn.className = 'abtn abtn-red';
+        clearBtn.style.cssText = 'display:none; padding:.2rem .55rem; font-size:.78rem; margin-top:.35rem;';
+        input.after(clearBtn);
+        input.addEventListener('change', function() { clearBtn.style.display = this.files.length ? 'inline-block' : 'none'; });
+        clearBtn.addEventListener('click', function() { input.value = ''; this.style.display = 'none'; });
+    });
+});
+</script>
+{% elseif not isAdmin %}
+<script>
+function supprimerDoc(idDoc, url, btn) {
+    if (!confirm('Supprimer ce fichier ?')) return;
+    btn.disabled = true; btn.textContent = '…';
+    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            var inputName = btn.dataset.input;
+            var isRequired = btn.dataset.required === '1';
+            var currentDiv = document.getElementById('doc-current-' + inputName);
+            if (currentDiv) currentDiv.remove();
+            var group = btn.closest('.form-group');
+            if (group) {
+                group.querySelectorAll('p.doc-hint').forEach(function(h) { h.remove(); });
+                if (isRequired) {
+                    var input = document.getElementById(inputName);
+                    if (input) input.setAttribute('required', '');
+                    var label = group.querySelector('label');
+                    if (label && !label.querySelector('.required')) { label.insertAdjacentHTML('beforeend', ' <span class="required">*</span>'); }
+                }
+            }
+        } else { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur lors de la suppression.'); }
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = 'Supprimer'; alert('Erreur réseau.'); });
+}
+
+function majFiliere(option) {
+    document.getElementById('bloc-filiere-option1').style.display = (option === 'option1') ? 'block' : 'none';
+    document.getElementById('bloc-filiere-option2').style.display = (option === 'option2') ? 'block' : 'none';
+    if (option === 'option3') { document.getElementById('filiereCandidat-hidden').value = ''; }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var checked = document.querySelector('input[name="entreeStationT"]:checked');
+    if (checked) majFiliere(checked.value);
+    var sel1 = document.getElementById('filiere-select-opt1');
+    if (sel1) sel1.addEventListener('change', function() { document.getElementById('filiereCandidat-hidden').value = this.value; });
+    var sel2 = document.getElementById('filiere-select-opt2');
+    if (sel2) sel2.addEventListener('change', function() { document.getElementById('filiereCandidat-hidden').value = this.value; });
+    document.querySelectorAll('input[type="file"]').forEach(function(input) {
+        var clearBtn = document.createElement('button');
+        clearBtn.type = 'button'; clearBtn.textContent = '✕ Effacer la sélection'; clearBtn.className = 'abtn abtn-red';
+        clearBtn.style.cssText = 'display:none; padding:.2rem .55rem; font-size:.78rem; margin-top:.35rem;';
+        input.after(clearBtn);
+        input.addEventListener('change', function() { clearBtn.style.display = this.files.length ? 'inline-block' : 'none'; });
+        clearBtn.addEventListener('click', function() { input.value = ''; this.style.display = 'none'; });
+    });
+    var appuisCheckboxes = document.querySelectorAll('input[name="appuisStationT[]"]');
+    var appuisHidden = document.getElementById('appuisStationT-hidden');
+    if (appuisCheckboxes.length && appuisHidden) {
+        function syncAppuis() {
+            appuisHidden.value = Array.from(appuisCheckboxes).filter(cb => cb.checked).map(cb => cb.value).join(', ');
+        }
+        appuisCheckboxes.forEach(cb => cb.addEventListener('change', syncAppuis));
+        syncAppuis();
+    }
+});
+</script>
+{% endif %}
+
+{% endblock %}

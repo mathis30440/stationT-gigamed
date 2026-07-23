@@ -1,0 +1,246 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isAdmin = isAdmin ?? false %}
+
+{% block titre %}{{ challenge.titreChallenge }} — Challenge{% if isAdmin %} — Administration{% endif %} — Station T{% endblock %}
+
+{% block contenu %}
+
+{% set sColor = {
+    'brouillon': 'background:#fef3c7; color:#92400e;',
+    'ouvert':    'background:#d1fae5; color:#065f46;',
+    'cloturé':   'background:#dbeafe; color:#1d4ed8;',
+    'archivé':   'background:#f3f4f6; color:#374151;'
+} %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Challenge</span>
+        <h1>{{ challenge.titreChallenge }}</h1>
+        <p>
+            <span class="abadge" style="{{ sColor[challenge.statutChallenge.value] ?? 'background:#f3f4f6; color:#374151;' }}">{{ challenge.statutChallenge.value }}</span>
+            &nbsp;·&nbsp; {{ challenge.filiere.value|capitalize }}
+            &nbsp;·&nbsp; {{ challenge.typeChallenge.value }}
+        </p>
+    </div>
+    <div class="admin-hero-right">
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <a href="{{ route('adminAfficherFormulaireModifierChallenge', {id: challenge.idChallenge}) }}" class="btn btn-blue">Modifier</a>
+        <form method="POST" action="{{ route('adminSupprimerChallenge', {id: challenge.idChallenge}) }}"
+              onsubmit="return confirm('Supprimer définitivement ce challenge ? Cette action est irréversible.')">
+            <button type="submit" class="btn" style="background:#dc2626; color:#fff; border:none;">Supprimer</button>
+        </form>
+        {% endif %}
+        <a href="{{ route('adminChallenges') }}" class="btn btn-outline-white">← Liste challenges</a>
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}" class="admin-nav-active">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Challenge</div>
+    <h1>{{ challenge.titreChallenge }}</h1>
+    <p>
+        <span class="ami-tag" style="{{ sColor[challenge.statutChallenge.value] ?? 'background:#d1fae5; color:#065f46;' }}">{{ challenge.statutChallenge.value|capitalize }}</span>
+        &nbsp;·&nbsp;
+        <span class="ami-tag" style="background:var(--bleu-clair); color:var(--bleu-moyen);">{{ challenge.filiere.value|capitalize }}</span>
+        &nbsp;·&nbsp;
+        <span class="ami-tag" style="background:var(--bleu-clair); color:var(--bleu-moyen);">{{ challenge.typeChallenge.value|capitalize }}</span>
+    </p>
+    <div class="hero-actions">
+        <a href="{{ route('listeChallenges') }}" class="btn btn-outline-white">← Retour aux challenges</a>
+        {% if peutCandidater ?? false %}
+            {% if hasBesoin ?? false %}
+            <span class="btn btn-outline-white" style="opacity:.6; cursor:not-allowed;">Besoin soumis — candidature impossible</span>
+            {% elseif dejaCandidate ?? false %}
+            <span class="btn btn-outline-white" style="background:#d1fae5; color:#065f46; border-color:#6ee7b7;">Candidature déjà soumise</span>
+            {% else %}
+            <a href="{{ route('afficherFormulaireCandidatureChallenge', {idChallenge: challenge.idChallenge}) }}" class="btn btn-primary">Candidater →</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+{% if isAdmin %}
+<div class="form-card">
+    <h2>Statut</h2>
+    <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <span class="abadge" style="font-size:.95rem; padding:.45rem .9rem; {{ sColor[challenge.statutChallenge.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+            {{ challenge.statutChallenge.value|capitalize }}
+        </span>
+        {% if challenge.statutChallenge.value == 'brouillon' %}
+        <form method="POST" action="{{ route('adminPublierChallenge', {id: challenge.idChallenge}) }}"
+              onsubmit="return confirm('Publier ce challenge ? Il passera au statut Ouvert.')">
+            <button type="submit" class="abtn abtn-blue">Publier</button>
+        </form>
+        {% elseif challenge.statutChallenge.value == 'ouvert' %}
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <form method="POST" action="{{ route('adminFinNotationChallenge', {id: challenge.idChallenge}) }}"
+              onsubmit="return confirm('Clôturer la notation de ce challenge ? Les candidatures éligibles passeront en instruction et les déposées seront refusées.')">
+            <button type="submit" class="abtn abtn-blue">Fin de notation</button>
+        </form>
+        {% endif %}
+        {% elseif challenge.statutChallenge.value == 'cloturé' %}
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <a href="{{ route('adminDecisionsChallenge', {id: challenge.idChallenge}) }}" class="abtn" style="background:#7c3aed; color:#fff;">Décisions finales</a>
+        {% endif %}
+        <form method="POST" action="{{ route('adminArchiverChallenge', {id: challenge.idChallenge}) }}"
+              onsubmit="return confirm('Archiver ce challenge ? Cette action est définitive.')">
+            <button type="submit" class="abtn abtn-slate">Archiver</button>
+        </form>
+        {% else %}
+        <span style="font-size:.85rem; color:#9ca3af;">Challenge archivé — aucune action disponible</span>
+        {% endif %}
+        {% if besoin is defined and besoin is not null %}
+        <span style="font-size:.85rem; color:var(--gris-texte); margin-left:auto;">Issu du besoin :
+            <a href="{{ route('adminDetailBesoin', {id: besoin.idBesoin}) }}" class="tlink">{{ besoin.titreBesoin }}</a>
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="form-card">
+    <h2>Informations générales</h2>
+    <div class="form-group">
+        <label>Objectif</label>
+        <p class="info-value">{{ challenge.objectifChallenge }}</p>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Filière</label>
+            <p class="info-value">{{ challenge.filiere.value|capitalize }}</p>
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <p class="info-value">{{ challenge.typeChallenge.value }}</p>
+        </div>
+        <div class="form-group">
+            <label>Public visé</label>
+            <p class="info-value">{{ challenge.publicVise }}</p>
+        </div>
+        {% if isAdmin %}
+        <div class="form-group">
+            <label>Déposé le</label>
+            <p class="info-value">{{ challenge.dateDepot|date('d/m/Y') }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="form-group">
+        <label>Périmètre prioritaire</label>
+        <p class="info-value">{{ challenge.perimetrePrioritaire }}</p>
+    </div>
+    <div class="form-group">
+        <label>Exemples d'innovations</label>
+        <p class="info-value">{{ challenge.exemplesInnovations }}</p>
+    </div>
+    {% if challenge.partenaires %}
+    <div class="form-group">
+        <label>Partenaires</label>
+        <p class="info-value">{{ challenge.partenaires }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>Cas d'usage pilote</h2>
+    <div class="form-group">
+        <label>Description</label>
+        <p class="info-value">{{ challenge.casUsagePilote }}</p>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Périmètre</label>
+            <p class="info-value">{{ challenge.perimetreCasUsage }}</p>
+        </div>
+        <div class="form-group">
+            <label>Durée indicative</label>
+            <p class="info-value">{{ challenge.dureeIndicative }}</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Sortie attendue</label>
+        <p class="info-value">{{ challenge.sortieAttendue }}</p>
+    </div>
+</div>
+
+{% if candidatures is defined %}
+<div class="form-card">
+    <h2>Candidatures reçues ({{ candidatures|length }})</h2>
+    {% if candidatures is empty %}
+    <p style="color:var(--gris-texte); font-size:.9rem; text-align:center; margin:0;">Aucune candidature reçue pour ce challenge.</p>
+    {% elseif isAdmin %}
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead><tr><th>#</th><th>Projet</th><th>Déposée le</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+        {% for c in candidatures %}
+        <tr>
+            <td class="td-id">{{ c.idCandidature }}</td>
+            <td><a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="tlink">{{ c.nomProjet }}</a></td>
+            <td class="td-muted">{{ c.dateDepot|date('d/m/Y') }}</td>
+            <td><span class="abadge" style="background:#ede9fe; color:#5b21b6;">{{ c.statutCandidature.value }}</span></td>
+            <td><a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="abtn abtn-slate">Voir</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    {% for c in candidatures %}
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:.75rem 0; border-bottom:1px solid var(--gris-clair); gap:1rem; flex-wrap:wrap;">
+        <div>
+            {% if role == 'partenaire' %}
+            <a href="{{ route('partenaireDetailCandidature', {id: c.idCandidature}) }}" style="font-weight:700; color:var(--bleu-fonce); text-decoration:none;">{{ c.nomProjet }}</a>
+            {% else %}
+            <a href="{{ route('detailCandidature', {id: c.idCandidature}) }}" style="font-weight:700; color:var(--bleu-fonce); text-decoration:none;">{{ c.nomProjet }}</a>
+            {% endif %}
+            <span style="font-size:.8rem; color:var(--gris-texte); margin-left:.6rem;">— {{ c.dateDepot|date('d/m/Y') }}</span>
+        </div>
+        <span class="abadge" style="
+            {% if c.statutCandidature.value == 'déposé' %}background:#dbeafe; color:#1d4ed8;
+            {% elseif c.statutCandidature.value == 'recevable' %}background:#d1fae5; color:#065f46;
+            {% elseif c.statutCandidature.value == 'en instruction' %}background:#ede9fe; color:#5b21b6;
+            {% elseif c.statutCandidature.value == 'sélectionné' %}background:#d1fae5; color:#065f46;
+            {% elseif c.statutCandidature.value == 'refusé' %}background:#fee2e2; color:#991b1b;
+            {% else %}background:#f3f4f6; color:#374151;{% endif %}">
+            {{ c.statutCandidature.value|capitalize }}
+        </span>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not isAdmin %}
+{% if (peutCandidater ?? false) and not (hasBesoin ?? false) and not (dejaCandidate ?? false) %}
+<div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+    <a href="{{ route('afficherFormulaireCandidatureChallenge', {idChallenge: challenge.idChallenge}) }}" class="btn btn-blue" style="flex:1; justify-content:center;">
+        Candidater à ce challenge →
+    </a>
+    <a href="{{ route('listeChallenges') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">← Retour aux challenges</a>
+</div>
+{% else %}
+<div style="margin-bottom:3rem;">
+    <a href="{{ route('listeChallenges') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">← Retour aux challenges</a>
+</div>
+{% endif %}
+{% endif %}
+
+</div>
+
+{% endblock %}

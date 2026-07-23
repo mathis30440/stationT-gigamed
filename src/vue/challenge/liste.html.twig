@@ -1,0 +1,82 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Challenges ouverts — Station T{% endblock %}
+
+{% block contenu %}
+
+<section class="hero">
+    <div class="hero-tag">Défis à relever</div>
+    <h1>Challenges ouverts</h1>
+    <p>Des défis concrets portés par les entreprises du territoire. Proposez votre solution innovante.</p>
+    <div class="hero-actions">
+        <a href="{{ route('listeAmi') }}" class="btn btn-outline-white">Voir les AMI →</a>
+    </div>
+</section>
+
+{% include 'base/_partials/filiere_colors.html.twig' %}
+
+<div class="page-header">
+    <div>
+        <h2 class="page-title">{{ challenges|length }} challenge{{ challenges|length > 1 ? 's' : '' }} ouvert{{ challenges|length > 1 ? 's' : '' }}</h2>
+        <p class="page-subtitle">Des défis lancés par les acteurs économiques locaux</p>
+    </div>
+</div>
+
+{% if challenges is empty %}
+<div class="form-card" style="text-align:center; padding:3rem;">
+    <p style="font-size:1.1rem; color:var(--gris-texte); margin-bottom:.5rem;">Aucun challenge ouvert pour le moment.</p>
+    <p style="color:var(--gris-texte); font-size:.9rem;">Consultez les AMI disponibles en attendant.</p>
+</div>
+{% else %}
+<div class="cards-list">
+{% for challenge in challenges %}
+{% set fc = filiere_colors[challenge.filiere.value] ?? '#00a9c0' %}
+{% set fb = filiere_bg[challenge.filiere.value] ?? '#e8f0fb' %}
+<div class="entity-card" style="border-left-color: {{ fc }};">
+    <div class="entity-card-top">
+        <div class="entity-card-title-row">
+            <h2>{{ challenge.titreChallenge }}</h2>
+            <div style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;">
+                <span class="filiere-tag filiere-{{ challenge.filiere.value }}">{{ challenge.filiere.value|capitalize }}</span>
+                <span class="type-tag">{{ challenge.typeChallenge.value|capitalize }}</span>
+                <span style="display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; font-weight:700; padding:.25rem .65rem; border-radius:20px; background:#d1fae5; color:#065f46;">
+                    <span style="width:5px; height:5px; border-radius:50%; background:#059669; display:inline-block;"></span> Ouvert
+                </span>
+            </div>
+        </div>
+        <p class="entity-card-desc">{{ challenge.objectifChallenge }}</p>
+    </div>
+
+    <div class="entity-card-meta">
+        <div class="meta-block">
+            <span class="meta-label">Public visé</span>
+            <span class="meta-value">{{ challenge.publicVise }}</span>
+        </div>
+        <div class="meta-block">
+            <span class="meta-label">Périmètre</span>
+            <span class="meta-value">{{ challenge.perimetrePrioritaire }}</span>
+        </div>
+        <div class="meta-block">
+            <span class="meta-label">Durée indicative</span>
+            <span class="meta-value">{{ challenge.dureeIndicative }}</span>
+        </div>
+    </div>
+
+    <div class="entity-card-footer">
+        <a href="{{ route('detailChallenge', {id: challenge.idChallenge}) }}" class="btn btn-outline-white" style="color:var(--bleu-fonce); border-color:var(--bleu-fonce);">Voir les détails</a>
+        {% if not peutCandidater %}
+        <span style="font-size:.85rem; color:var(--gris-texte);">Consultation uniquement</span>
+        {% elseif hasBesoin %}
+        <span style="font-size:.85rem; color:#92400e; background:#fef3c7; padding:.4rem .8rem; border-radius:8px; font-weight:600;">Besoin soumis</span>
+        {% elseif challenge.idChallenge in challengesCandidates %}
+        <span style="font-size:.85rem; color:#065f46; background:#d1fae5; padding:.4rem .8rem; border-radius:8px; font-weight:600;">Candidature soumise</span>
+        {% else %}
+        <a href="{{ route('afficherFormulaireCandidatureChallenge', {idChallenge: challenge.idChallenge}) }}" class="btn btn-blue">Candidater →</a>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

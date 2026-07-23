@@ -1,0 +1,277 @@
+parameters:
+
+services:
+
+  Twig\Loader\FilesystemLoader:
+    class: Twig\Loader\FilesystemLoader
+    arguments: [ '%project_root%/src/vue/' ]
+
+  Twig\Environment:
+    class: Twig\Environment
+    arguments:
+      $loader: '@Twig\Loader\FilesystemLoader'
+      $options:
+        autoescape: 'html'
+        strict_variables: true
+        debug: true
+
+  App\Gigamed\Configuration\ConfigurationBDDMySQL:
+    class: App\Gigamed\Configuration\ConfigurationBDDMySQL
+
+  App\Gigamed\Modele\Database\ConnexionBaseDeDonnees:
+    class: App\Gigamed\Modele\Database\ConnexionBaseDeDonnees
+    arguments:
+      - '@App\Gigamed\Configuration\ConfigurationBDDMySQL'
+
+  App\Gigamed\Modele\Repository\UtilisateurRepository:
+    class: App\Gigamed\Modele\Repository\UtilisateurRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\StructureRepository:
+    class: App\Gigamed\Modele\Repository\StructureRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\AmiRepository:
+    class: App\Gigamed\Modele\Repository\AmiRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\ChallengeRepository:
+    class: App\Gigamed\Modele\Repository\ChallengeRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\BesoinRepository:
+    class: App\Gigamed\Modele\Repository\BesoinRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\CandidatureRepository:
+    class: App\Gigamed\Modele\Repository\CandidatureRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\DocumentRepository:
+    class: App\Gigamed\Modele\Repository\DocumentRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Service\MailService:
+    class: App\Gigamed\Service\MailService
+
+  App\Gigamed\Service\UtilisateurService:
+    class: App\Gigamed\Service\UtilisateurService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\UtilisateurRepository'
+      - '@App\Gigamed\Modele\Repository\StructureRepository'
+      - '@App\Gigamed\Service\MailService'
+
+  App\Gigamed\Service\UtilisateurServiceInterface:
+    alias: App\Gigamed\Service\UtilisateurService
+
+  App\Gigamed\Service\AmiService:
+    class: App\Gigamed\Service\AmiService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\AmiRepository'
+      - '@App\Gigamed\Modele\Repository\CandidatureRepository'
+
+  App\Gigamed\Service\AmiServiceInterface:
+    alias: App\Gigamed\Service\AmiService
+
+  App\Gigamed\Service\ChallengeService:
+    class: App\Gigamed\Service\ChallengeService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\ChallengeRepository'
+
+  App\Gigamed\Service\ChallengeServiceInterface:
+    alias: App\Gigamed\Service\ChallengeService
+
+  App\Gigamed\Modele\Repository\AffecterRepository:
+    class: App\Gigamed\Modele\Repository\AffecterRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\AppartenirAmiRepository:
+    class: App\Gigamed\Modele\Repository\AppartenirAmiRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\AppartenirChallengeRepository:
+    class: App\Gigamed\Modele\Repository\AppartenirChallengeRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\CritereRepository:
+    class: App\Gigamed\Modele\Repository\CritereRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\NoterRepository:
+    class: App\Gigamed\Modele\Repository\NoterRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Modele\Repository\JournalRepository:
+    class: App\Gigamed\Modele\Repository\JournalRepository
+    arguments:
+      - '@App\Gigamed\Modele\Database\ConnexionBaseDeDonnees'
+
+  App\Gigamed\Service\JournalService:
+    class: App\Gigamed\Service\JournalService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\JournalRepository'
+
+  App\Gigamed\Service\JournalServiceInterface:
+    alias: App\Gigamed\Service\JournalService
+
+  App\Gigamed\Service\BesoinService:
+    class: App\Gigamed\Service\BesoinService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\BesoinRepository'
+      - '@App\Gigamed\Modele\Repository\CandidatureRepository'
+      - '@App\Gigamed\Modele\Repository\ChallengeRepository'
+      - '@App\Gigamed\Modele\Repository\AmiRepository'
+      - '@App\Gigamed\Modele\Repository\UtilisateurRepository'
+      - '@App\Gigamed\Service\MailService'
+
+  App\Gigamed\Service\BesoinServiceInterface:
+    alias: App\Gigamed\Service\BesoinService
+
+  App\Gigamed\Service\CandidatureService:
+    class: App\Gigamed\Service\CandidatureService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\CandidatureRepository'
+      - '@App\Gigamed\Modele\Repository\BesoinRepository'
+      - '@App\Gigamed\Modele\Repository\UtilisateurRepository'
+      - '@App\Gigamed\Service\MailService'
+      - '@App\Gigamed\Modele\Repository\AmiRepository'
+      - '@App\Gigamed\Modele\Repository\ChallengeRepository'
+      - '@App\Gigamed\Modele\Repository\AffecterRepository'
+      - '@App\Gigamed\Modele\Repository\DocumentRepository'
+      - '@App\Gigamed\Modele\Repository\NoterRepository'
+
+  App\Gigamed\Service\CandidatureServiceInterface:
+    alias: App\Gigamed\Service\CandidatureService
+
+  App\Gigamed\Service\DocumentService:
+    class: App\Gigamed\Service\DocumentService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\DocumentRepository'
+
+  App\Gigamed\Service\DocumentServiceInterface:
+    alias: App\Gigamed\Service\DocumentService
+
+  App\Gigamed\Service\NotationService:
+    class: App\Gigamed\Service\NotationService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\CritereRepository'
+      - '@App\Gigamed\Modele\Repository\NoterRepository'
+
+  App\Gigamed\Service\NotationServiceInterface:
+    alias: App\Gigamed\Service\NotationService
+
+  App\Gigamed\Service\AffecterService:
+    class: App\Gigamed\Service\AffecterService
+    arguments:
+      - '@App\Gigamed\Modele\Repository\AffecterRepository'
+
+  App\Gigamed\Service\AffecterServiceInterface:
+    alias: App\Gigamed\Service\AffecterService
+
+  App\Gigamed\Lib\ConnexionUtilisateurSession:
+    class: App\Gigamed\Lib\ConnexionUtilisateurSession
+
+  App\Gigamed\Lib\ConnexionUtilisateurJWT:
+    class: App\Gigamed\Lib\ConnexionUtilisateurJWT
+
+  App\Gigamed\Controleur\ControleurGenerique:
+    class: App\Gigamed\Controleur\ControleurGenerique
+    arguments:
+      - '@service_container'
+
+  App\Gigamed\Controleur\ControleurAmi:
+    class: App\Gigamed\Controleur\ControleurAmi
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\AmiServiceInterface'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+
+  App\Gigamed\Controleur\ControleurChallenge:
+    class: App\Gigamed\Controleur\ControleurChallenge
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\ChallengeServiceInterface'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+
+  App\Gigamed\Controleur\ControleurBesoin:
+    class: App\Gigamed\Controleur\ControleurBesoin
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+
+  App\Gigamed\Controleur\ControleurCandidature:
+    class: App\Gigamed\Controleur\ControleurCandidature
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AmiServiceInterface'
+      - '@App\Gigamed\Service\ChallengeServiceInterface'
+      - '@App\Gigamed\Service\DocumentServiceInterface'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+
+  App\Gigamed\Controleur\ControleurUtilisateur:
+    class: App\Gigamed\Controleur\ControleurUtilisateur
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurJWT'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+      - '@App\Gigamed\Service\NotationServiceInterface'
+
+  App\Gigamed\Controleur\ControleurAdmin:
+    class: App\Gigamed\Controleur\ControleurAdmin
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\BesoinServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AmiServiceInterface'
+      - '@App\Gigamed\Service\ChallengeServiceInterface'
+      - '@App\Gigamed\Service\JournalServiceInterface'
+      - '@App\Gigamed\Service\DocumentServiceInterface'
+      - '@App\Gigamed\Service\MailService'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+      - '@App\Gigamed\Service\NotationServiceInterface'
+
+  App\Gigamed\Controleur\ControleurPartenaire:
+    class: App\Gigamed\Controleur\ControleurPartenaire
+    arguments:
+      - '@service_container'
+      - '@App\Gigamed\Lib\ConnexionUtilisateurSession'
+      - '@App\Gigamed\Service\UtilisateurServiceInterface'
+      - '@App\Gigamed\Service\AffecterServiceInterface'
+      - '@App\Gigamed\Service\CandidatureServiceInterface'
+      - '@App\Gigamed\Service\AmiServiceInterface'
+      - '@App\Gigamed\Service\ChallengeServiceInterface'
+      - '@App\Gigamed\Service\NotationServiceInterface'
+      - '@App\Gigamed\Service\DocumentServiceInterface'

@@ -1,0 +1,136 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Transformer en AMI — Admin{% endblock %}
+
+{% block contenu %}
+
+{% set v = ancien ?? {} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Besoin #{{ besoin.idBesoin }}</span>
+        <h1>Transformer en AMI</h1>
+        <p>{{ besoin.titreBesoin }}</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminBesoins') }}" class="btn btn-outline-white">← Retour aux besoins</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}" class="admin-nav-active">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="page-form-wide">
+
+        <div class="form-card">
+        <h2>Données reprises du besoin</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Filière</label>
+                <p class="info-value">{{ besoin.filiere.value }}</p>
+            </div>
+            <div class="form-group">
+                <label>Public visé</label>
+                <p class="info-value">{{ besoin.publicVise }}</p>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Objectif</label>
+            <p class="info-value">{{ besoin.objectifBesoin }}</p>
+        </div>
+        <div class="form-group">
+            <label>Périmètre prioritaire</label>
+            <p class="info-value">{{ besoin.perimetrePrioritaire }}</p>
+        </div>
+        <div class="form-group">
+            <label>Exemples d'innovations</label>
+            <p class="info-value">{{ besoin.exemplesInnovations }}</p>
+        </div>
+        {% if besoin.partenaires %}
+        <div class="form-group">
+            <label>Partenaires potentiels</label>
+            <p class="info-value">{{ besoin.partenaires }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+        <form method="POST" action="{{ route('adminTransformerEnAmi', {id: besoin.idBesoin}) }}">
+        <div class="form-card">
+            <h2>Cas d'usage et périmètre</h2>
+
+            <div class="form-group">
+                <label for="casUsagePilote">Cas d'usage pilote <span class="required">*</span></label>
+                <textarea id="casUsagePilote" name="casUsagePilote" rows="3" required
+                    placeholder="Décrivez le cas d'usage proposé pour le pilote.">{{ v.casUsagePilote ?? '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="perimetreCasUsage">Périmètre du cas d'usage <span class="required">*</span></label>
+                <input type="text" id="perimetreCasUsage" name="perimetreCasUsage"
+                    value="{{ v.perimetreCasUsage ?? '' }}" required placeholder="Ex : Cap d'Agde, tourisme balnéaire">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dureeIndicative">Durée indicative <span class="required">*</span></label>
+                    <input type="text" id="dureeIndicative" name="dureeIndicative"
+                        value="{{ v.dureeIndicative ?? '' }}" required placeholder="Ex : 6 mois">
+                </div>
+                <div class="form-group">
+                    <label for="sortieAttendue">Sortie attendue <span class="required">*</span></label>
+                    <input type="text" id="sortieAttendue" name="sortieAttendue"
+                        value="{{ v.sortieAttendue ?? '' }}" required placeholder="Ex : Rapport + déploiement">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Calendrier de l'AMI</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dateOuverture">Date d'ouverture des candidatures <span class="required">*</span></label>
+                    <input type="date" id="dateOuverture" name="dateOuverture"
+                        value="{{ v.dateOuverture ?? '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="dateCloture">Date de clôture <span class="required">*</span></label>
+                    <input type="date" id="dateCloture" name="dateCloture"
+                        value="{{ v.dateCloture ?? '' }}" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dateAuditions">Date des auditions <span class="required">*</span></label>
+                    <input type="date" id="dateAuditions" name="dateAuditions"
+                        value="{{ v.dateAuditions ?? '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="dateResultats">Date des résultats <span class="required">*</span></label>
+                    <input type="date" id="dateResultats" name="dateResultats"
+                        value="{{ v.dateResultats ?? '' }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="dateDemarrage">Date de démarrage <span class="required">*</span></label>
+                <input type="date" id="dateDemarrage" name="dateDemarrage"
+                    value="{{ v.dateDemarrage ?? '' }}" required>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+            <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Créer l'AMI</button>
+            <a href="{{ route('adminBesoins') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

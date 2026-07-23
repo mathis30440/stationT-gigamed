@@ -1,0 +1,297 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}{{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }} — Administration{% endblock %}
+
+{% block contenu %}
+
+{% include 'base/_partials/statut_colors.html.twig' %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Utilisateur</span>
+        <h1>{{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }}</h1>
+        <p>{{ cible.emailUtilisateur }} &nbsp;·&nbsp; {{ cible.roleUtilisateur.value }}</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if peutAgir %}
+        <a href="{{ route('adminAfficherFormulaireModifierUtilisateur', {id: cible.idUtilisateur}) }}" class="btn btn-outline-white">Modifier</a>
+        {% endif %}
+        <a href="{{ route('adminUtilisateurs') }}" class="btn btn-outline-white">← Utilisateurs</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}" class="admin-nav-active">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+
+        <div class="admin-card">
+        <div class="admin-profile-band">
+            <div class="admin-avatar">
+                {{ cible.prenomUtilisateur|slice(0,1) }}{{ cible.nomUtilisateur|slice(0,1) }}
+            </div>
+            <div>
+                <div class="admin-profile-name">{{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }}</div>
+                <div class="admin-profile-sub">
+                    <span class="abadge" style="background:#dbeafe; color:#1d4ed8;">{{ cible.roleUtilisateur.value }}</span>
+                    <span>{{ cible.emailUtilisateur }}</span>
+                    {% if cible.emailVerifie %}
+                    <span class="abadge" style="background:#d1fae5; color:#065f46;">Email vérifié</span>
+                    {% else %}
+                    <span class="abadge" style="background:#fee2e2; color:#991b1b;">Non vérifié</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="admin-info-grid">
+            <div class="admin-info-item">
+                <label>Nom complet</label>
+                <p>{{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Adresse email</label>
+                <p>{{ cible.emailUtilisateur }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Téléphone</label>
+                <p>{{ cible.telephoneUtilisateur ?? '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Fonction / Statut</label>
+                <p>{{ cible.statutUtilisateur ?? '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Rôle actuel</label>
+                <p>{{ cible.roleUtilisateur.value }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Email vérifié</label>
+                <p>{% if cible.emailVerifie %}Oui{% else %}Non{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+        {% if structure is not null %}
+    <div class="admin-card">
+        <div class="admin-card-head">
+            <h2>Structure — {{ structure.nomStructure }}</h2>
+            <span class="abadge" style="background:#ede9fe; color:#5b21b6;">{{ structure.typeStructure.value|capitalize }}</span>
+        </div>
+        <div class="admin-info-grid">
+            <div class="admin-info-item">
+                <label>Nom de la structure</label>
+                <p>{{ structure.nomStructure }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Forme juridique</label>
+                <p>{{ structure.formeJuridique }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>SIRET / RNA</label>
+                <p>{{ structure.numSIRET_RNA }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Date de création</label>
+                <p>{{ structure.dateCreation|date('d/m/Y') }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Adresse du siège</label>
+                <p>{{ structure.adresseSiege }}, {{ structure.commune }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Site web</label>
+                <p>{{ structure.siteWeb ?? '—' }}</p>
+            </div>
+            {% if structure.typeStructure.value == 'startup' %}
+            <div class="admin-info-item">
+                <label>Statut actuel</label>
+                <p>{{ structure.statutJuridiqueS ? structure.statutJuridiqueS.value|capitalize : '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Associés / fondateurs</label>
+                <p>{{ structure.nombreAssocies ?? '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Salariés</label>
+                <p>{{ structure.nombreSalaries ?? '—' }}</p>
+            </div>
+            {% elseif structure.typeStructure.value == 'entreprise' %}
+            <div class="admin-info-item">
+                <label>Nature du candidat</label>
+                <p>{{ structure.statutJuridiqueE ? structure.statutJuridiqueE.value|capitalize : '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Effectif</label>
+                <p>{{ structure.effectif ?? '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Chiffre d'affaires (€)</label>
+                <p>{{ structure.chiffreAffaires ?? '—' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Implanté territoire</label>
+                <p>{{ structure.implantationTerritoire ? 'Oui' : 'Non' }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Implantation envisagée</label>
+                <p>{{ structure.implantationEnvisagee ? 'Oui' : 'Non' }}</p>
+            </div>
+            {% endif %}
+            <div class="admin-info-item">
+                <label>Référent — Nom</label>
+                <p>{{ structure.referentNom }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Référent — Fonction</label>
+                <p>{{ structure.referentFonction }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Référent — Email</label>
+                <p>{{ structure.referentEmail }}</p>
+            </div>
+            <div class="admin-info-item">
+                <label>Référent — Téléphone</label>
+                <p>{{ structure.referentTelephone }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+        <div class="admin-card">
+        <div class="admin-card-head">
+            <h2>Actions administrateur</h2>
+        </div>
+        <div style="padding:1.5rem 1.75rem; display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center;">
+            {% if peutAgir %}
+            <a href="{{ route('adminAfficherFormulaireModifierUtilisateur', {id: cible.idUtilisateur}) }}"
+               class="abtn abtn-blue" style="padding:.45rem 1.1rem; font-size:.88rem;">
+                Modifier le profil / rôle / structure
+            </a>
+            {% elseif cible.idUtilisateur != utilisateur.idUtilisateur %}
+            <span style="color:#9ca3af; font-size:.85rem;">Vous ne pouvez pas modifier cet utilisateur.</span>
+            {% endif %}
+
+            {% if cible.idUtilisateur == utilisateur.idUtilisateur %}
+            <span style="color:#9ca3af; font-size:.85rem;">Il s'agit de votre propre compte.</span>
+            {% elseif not peutAgir %}
+            <span style="color:#9ca3af; font-size:.85rem;">Vous ne pouvez pas supprimer cet utilisateur.</span>
+            {% else %}
+            <button type="button" class="abtn abtn-red" style="padding:.45rem 1.1rem; font-size:.88rem;"
+                    onclick="document.getElementById('form-suppression').style.display = document.getElementById('form-suppression').style.display === 'none' ? '' : 'none'">
+                Supprimer le compte
+            </button>
+            <form id="form-suppression" method="POST" action="{{ route('adminSupprimerUtilisateur', {id: cible.idUtilisateur}) }}"
+                  style="display:none; margin-top:.75rem;">
+                <div class="form-group" style="margin:0 0 .5rem;">
+                    <label for="raisonSuppression" style="font-weight:600; color:#991b1b; font-size:.88rem;">
+                        Motif de suppression <span style="color:#dc2626;">*</span>
+                    </label>
+                    <textarea id="raisonSuppression" name="raisonSuppression" rows="3" required
+                              placeholder="Expliquez la raison de la suppression (visible par l'utilisateur)..."
+                              style="width:100%; padding:.5rem; border:1px solid #dc2626; border-radius:6px; font-size:.85rem; resize:vertical; margin-top:.3rem;"></textarea>
+                </div>
+                <button type="submit" class="abtn abtn-red" style="padding:.45rem 1.1rem; font-size:.88rem;">
+                    Confirmer la suppression
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+        {% if besoins is not empty %}
+    <div class="admin-card">
+        <div class="admin-card-head">
+            <h2>Besoins soumis</h2>
+            <span class="admin-card-count">{{ besoins|length }}</span>
+        </div>
+        <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Titre</th>
+                    <th>Filière</th>
+                    <th>Déposé le</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in besoins %}
+                <tr>
+                    <td class="td-id">{{ b.idBesoin }}</td>
+                    <td><a href="{{ route('adminDetailBesoin', {id: b.idBesoin}) }}" class="tlink">{{ b.titreBesoin }}</a></td>
+                    <td class="td-muted">{{ b.filiere.value|capitalize }}</td>
+                    <td class="td-muted">{{ b.dateDepot|date('d/m/Y') }}</td>
+                    <td>
+                        <span class="abadge" style="
+                            {% if b.statutBesoin.value == 'en attente' %}background:#fef9c3; color:#854d0e;
+                            {% elseif b.statutBesoin.value == 'transformé challenge' %}background:#dbeafe; color:#1d4ed8;
+                            {% elseif b.statutBesoin.value == 'transformé AMI' %}background:#d1fae5; color:#065f46;
+                            {% else %}background:#fee2e2; color:#991b1b;{% endif %}">
+                            {{ b.statutBesoin.value }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+        {% if candidatures is not empty %}
+    <div class="admin-card">
+        <div class="admin-card-head">
+            <h2>Candidatures déposées</h2>
+            <span class="admin-card-count">{{ candidatures|length }}</span>
+        </div>
+        <div class="admin-table-wrap">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Projet</th>
+                    <th>Filière</th>
+                    <th>Déposée le</th>
+                    <th>Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in candidatures %}
+                <tr>
+                    <td class="td-id">{{ c.idCandidature }}</td>
+                    <td><a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="tlink">{{ c.nomProjet }}</a></td>
+                    <td class="td-muted">{{ c.filiereCandidat ?? '—' }}</td>
+                    <td class="td-muted">{{ c.dateDepot|date('d/m/Y') }}</td>
+                    <td>
+                        <span class="abadge" style="{{ statutColor[c.statutCandidature.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+                            {{ c.statutCandidature.value }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if besoins is empty and candidatures is empty %}
+    <div class="admin-card">
+        <p style="padding:2.5rem; text-align:center; color:#9ca3af;">Cet utilisateur n'a déposé ni besoin ni candidature.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

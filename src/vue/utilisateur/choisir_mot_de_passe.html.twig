@@ -1,0 +1,35 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Choisir mon mot de passe — Station T{% endblock %}
+
+{% block contenu %}
+
+<section class="hero">
+    <div class="hero-tag">Activation du compte</div>
+    <h1>Choisissez votre mot de passe</h1>
+    <p>Définissez un mot de passe pour accéder à votre espace Station T.</p>
+</section>
+
+<div class="page-form-wide" style="max-width:520px;">
+    <div class="form-card">
+        <h2>Nouveau mot de passe</h2>
+        <form method="POST" action="{{ route('choisirMotDePasse', {token: token}) }}">
+            <div class="form-group">
+                <label for="motDePasse">Mot de passe <span class="required">*</span></label>
+                <p class="form-hint">8 caractères minimum, une majuscule, une minuscule et un chiffre.</p>
+                <input type="password" id="motDePasse" name="motDePasse" required
+                       placeholder="Choisissez un mot de passe sécurisé" autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label for="motDePasseConfirm">Confirmation <span class="required">*</span></label>
+                <input type="password" id="motDePasseConfirm" name="motDePasseConfirm" required
+                       placeholder="Répétez le mot de passe" autocomplete="new-password">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-blue">Activer mon compte</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

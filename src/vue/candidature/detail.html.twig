@@ -1,0 +1,599 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}{{ candidature.nomProjet }} — Station T{% endblock %}
+
+{% block contenu %}
+
+{% set isAdmin = isAdmin ?? false %}
+{% set isPartenaire = isPartenaire ?? false %}
+{% set estProprietaire = estProprietaire ?? true %}
+{% set role = (soumetteur is not null) ? soumetteur.roleUtilisateur.value : utilisateur.roleUtilisateur.value %}
+{% set isEntreprise = role == 'entreprise' %}
+
+{% include 'base/_partials/statut_colors.html.twig' %}
+
+{% if isAdmin and not isPartenaire %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Candidature</span>
+        <h1>{{ candidature.nomProjet }}</h1>
+        <p>
+            <span class="abadge" style="{{ statutColor[candidature.statutCandidature.value] ?? '' }}">{{ candidature.statutCandidature.value|capitalize }}</span>
+            &nbsp;·&nbsp;
+            {% if ami is not null %}AMI : {{ ami.titreAmi }}
+            {% elseif challenge is not null %}Challenge : {{ challenge.titreChallenge }}
+            {% endif %}
+            &nbsp;·&nbsp; Déposée le {{ candidature.dateDepot|date('d/m/Y') }}
+        </p>
+    </div>
+    <div class="admin-hero-right">
+        {% if candidature.statutCandidature.value == 'éligible' and utilisateur.roleUtilisateur.value in ['superAdmin', 'admin'] %}
+        <a href="{{ route('adminAfficherFormulaireNoterCandidature', {id: candidature.idCandidature}) }}" class="btn btn-blue">
+            {% if aDejaNote ?? false %}Modifier mes notes{% else %}Noter{% endif %}
+        </a>
+        {% endif %}
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        {% if candidature.statutCandidature.value == 'brouillon' and candidature.idUtilisateur == utilisateur.idUtilisateur %}
+        <a href="{{ route('adminAfficherFormulaireSoumettreCandidature') }}?id={{ candidature.idCandidature }}" class="btn" style="background:#f59e0b; color:#fff; border:none;">Continuer à remplir</a>
+        {% else %}
+        <a href="{{ route('adminAfficherFormulaireModifierCandidature', {id: candidature.idCandidature}) }}" class="btn btn-blue">Modifier</a>
+        {% endif %}
+        <form method="POST" action="{{ route('adminSupprimerCandidature', {id: candidature.idCandidature}) }}"
+              onsubmit="return confirm('Supprimer définitivement cette candidature ? Cette action est irréversible.')">
+            <button type="submit" class="btn" style="background:#dc2626; color:#fff; border:none;">Supprimer</button>
+        </form>
+        {% endif %}
+        <a href="{{ route('adminCandidatures') }}" class="btn btn-outline-white">← Retour aux candidatures</a>
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}" class="admin-nav-active">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">{% if isPartenaire %}Instruction — Candidature affectée{% elseif estProprietaire %}Ma candidature{% else %}Candidature{% endif %}</div>
+    <h1>{{ candidature.nomProjet }}</h1>
+    <p>
+        <span class="ami-tag" style="{{ statutColor[candidature.statutCandidature.value] ?? '' }}">
+            {{ candidature.statutCandidature.value|capitalize }}
+        </span>
+        &nbsp;·&nbsp;
+        {% if ami is not null %}AMI : {{ ami.titreAmi }}
+        {% elseif challenge is not null %}Challenge : {{ challenge.titreChallenge }}
+        {% endif %}
+        &nbsp;·&nbsp; Déposée le {{ candidature.dateDepot|date('d/m/Y') }}
+    </p>
+    <div class="hero-actions">
+        {% if isPartenaire %}
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Mon espace</a>
+        {% if candidature.statutCandidature.value == 'éligible' %}
+        <a href="{{ route('partenaireAfficherFormulaireNoter', {id: candidature.idCandidature}) }}" class="btn btn-primary">
+            {% if aDejaNote ?? false %}Modifier mes notes{% else %}Noter cette candidature{% endif %}
+        </a>
+        {% endif %}
+        {% else %}
+        {% if ami is not null %}
+        <a href="{{ route('detailAmi', {id: ami.idAmi}) }}" class="btn btn-outline-white">← Retour à l'AMI</a>
+        {% elseif challenge is not null %}
+        <a href="{{ route('detailChallenge', {id: challenge.idChallenge}) }}" class="btn btn-outline-white">← Retour au challenge</a>
+        {% else %}
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Retour à mon espace</a>
+        {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+{% if not isAdmin and candidature.statutCandidature.value == 'brouillon' %}
+<div class="form-card" style="border-left:4px solid #f59e0b; background:#fffbeb;">
+    <p style="color:#92400e; font-weight:600; margin:0 0 .75rem;">Cette candidature est enregistrée en brouillon — elle n'a pas encore été déposée.</p>
+    {% if ami is not null %}
+    <a href="{{ route('afficherFormulaireCandidatureAmi', {idAmi: ami.idAmi}) }}" class="btn btn-blue">Continuer à remplir et déposer</a>
+    {% elseif challenge is not null %}
+    <a href="{{ route('afficherFormulaireCandidatureChallenge', {idChallenge: challenge.idChallenge}) }}" class="btn btn-blue">Continuer à remplir et déposer</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if isAdmin %}
+<div class="admin-card" style="margin-bottom:1.5rem;">
+    <div class="admin-card-head"><h2>Informations liées</h2></div>
+    <div style="display:flex; flex-direction:column; gap:.75rem; padding:1rem 1.75rem;">
+        {% if soumetteur is defined and soumetteur is not null %}
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem;">
+            <div>
+                <span style="color:#6b7280; font-size:.85rem;">Soumis par</span>
+                <p style="margin:.2rem 0 0; font-weight:600;">{{ soumetteur.prenomUtilisateur }} {{ soumetteur.nomUtilisateur }}</p>
+                <p style="margin:.1rem 0 0; color:#6b7280; font-size:.85rem;">{{ soumetteur.emailUtilisateur }}</p>
+            </div>
+            {% if isAdmin and not isPartenaire %}
+            <a href="{{ route('adminDetailUtilisateur', {id: soumetteur.idUtilisateur}) }}" class="abtn abtn-blue">Voir le profil →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if ami is not null and ami.idAmi is not null %}
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem; border-top:1px solid #e5e7eb; padding-top:.75rem;">
+            <div>
+                <span style="color:#6b7280; font-size:.85rem;">AMI concerné</span>
+                <p style="margin:.2rem 0 0; font-weight:600;">{{ ami.titreAmi }}</p>
+            </div>
+            {% if isAdmin and not isPartenaire %}
+            <a href="{{ route('adminDetailAmi', {id: ami.idAmi}) }}" class="abtn abtn-blue">Voir l'AMI →</a>
+            {% else %}
+            <a href="{{ route('detailAmi', {id: ami.idAmi}) }}" class="abtn abtn-slate">Voir l'AMI →</a>
+            {% endif %}
+        </div>
+        {% elseif challenge is not null and challenge.idChallenge is not null %}
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem; border-top:1px solid #e5e7eb; padding-top:.75rem;">
+            <div>
+                <span style="color:#6b7280; font-size:.85rem;">Challenge concerné</span>
+                <p style="margin:.2rem 0 0; font-weight:600;">{{ challenge.titreChallenge }}</p>
+            </div>
+            {% if isAdmin and not isPartenaire %}
+            <a href="{{ route('adminDetailChallenge', {id: challenge.idChallenge}) }}" class="abtn abtn-blue">Voir le challenge →</a>
+            {% else %}
+            <a href="{{ route('detailChallenge', {id: challenge.idChallenge}) }}" class="abtn abtn-slate">Voir le challenge →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% if isAdmin and not isPartenaire %}
+<div class="form-card">
+    <h2>Administration — Statut de la candidature</h2>
+    {% if candidature.statutCandidature.value == 'en instruction' %}
+    <p style="color:#5b21b6; font-size:.9rem; margin:0;">La notation est terminée — le statut ne peut plus être modifié manuellement.</p>
+    {% else %}
+    <form method="POST" action="{{ route('adminChangerStatutCandidature', {id: candidature.idCandidature}) }}"
+          style="display:flex; flex-direction:column; gap:.75rem;">
+        <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+            <select name="statut" id="selectStatut" style="padding:.5rem .75rem; border:1px solid var(--gris-bordure); border-radius:8px; font-size:.9rem;">
+                {% for s in statuts %}
+                <option value="{{ s.value }}" {% if s == candidature.statutCandidature %}selected{% endif %}>{{ s.value }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-blue" style="padding:.5rem 1.25rem;">Appliquer le statut</button>
+        </div>
+        <div id="blocIncomplet" style="display:none;">
+            <label style="font-weight:600; color:#92400e; display:block; margin-bottom:.4rem;">
+                Éléments manquants <span style="color:#dc2626;">*</span>
+            </label>
+            <textarea name="messageIncomplet" id="messageIncomplet" rows="4"
+                      placeholder="Décrivez précisément les documents ou informations manquants..."
+                      style="width:100%; padding:.6rem .75rem; border:1px solid #f59e0b; border-radius:8px; font-size:.9rem; resize:vertical;"></textarea>
+            <p style="color:#92400e; font-size:.82rem; margin:.3rem 0 0;">
+                Ce message sera envoyé par email à la startup.
+            </p>
+        </div>
+        <div id="blocRefus" style="display:none;">
+            <label style="font-weight:600; color:#991b1b; display:block; margin-bottom:.4rem;">
+                Motif du refus <span style="color:#dc2626;">*</span>
+            </label>
+            <textarea name="messageRefus" id="messageRefus" rows="4"
+                      placeholder="Expliquez le motif du refus (visible par la startup)..."
+                      style="width:100%; padding:.6rem .75rem; border:1px solid #dc2626; border-radius:8px; font-size:.9rem; resize:vertical;"></textarea>
+            <p style="color:#991b1b; font-size:.82rem; margin:.3rem 0 0;">
+                Ce message sera envoyé par email à la startup.
+            </p>
+        </div>
+    </form>
+    {% endif %}
+</div>
+<script>
+(function() {
+    var sel = document.getElementById('selectStatut');
+    var blocIncomplet = document.getElementById('blocIncomplet');
+    var blocRefus = document.getElementById('blocRefus');
+    var taIncomplet = document.getElementById('messageIncomplet');
+    var taRefus = document.getElementById('messageRefus');
+    function toggle() {
+        var isIncomplet = sel.value === 'incomplet';
+        var isRefus = sel.value === 'refusé';
+        blocIncomplet.style.display = isIncomplet ? 'block' : 'none';
+        blocRefus.style.display = isRefus ? 'block' : 'none';
+        taIncomplet.required = isIncomplet;
+        taRefus.required = isRefus;
+    }
+    sel.addEventListener('change', toggle);
+    toggle();
+})();
+</script>
+{% endif %}
+
+{% if candidature.statutCandidature.value == 'sélectionné' and not isAdmin %}
+<div class="form-card" style="border-left:4px solid var(--turquoise); background:#f0fdf4;">
+    <p style="color:#065f46; font-weight:600; margin:0;">Félicitations ! Votre candidature a été sélectionnée. L'équipe Station T vous contactera prochainement.</p>
+</div>
+{% elseif candidature.statutCandidature.value == 'refusé' and not isAdmin %}
+<div class="form-card" style="border-left:4px solid #dc2626; background:#fef2f2;">
+    <p style="color:#991b1b; font-weight:600; margin:0;">Votre candidature n'a pas été retenue. Contactez-nous pour plus d'informations.</p>
+</div>
+{% elseif candidature.statutCandidature.value == 'incomplet' %}
+<div class="form-card" style="border-left:4px solid #f59e0b; background:#fffbeb;">
+    {% if not isAdmin %}
+    <p style="color:#92400e; font-weight:600; margin:0 0 1rem;">Votre dossier est incomplet. Consultez l'email reçu pour connaître les éléments manquants, puis transmettez-les ci-dessous.</p>
+    <form method="POST" action="{{ route('ajouterComplementsCandidature', {id: candidature.idCandidature}) }}"
+          enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:.75rem;">
+        <label style="font-weight:600; display:block; color:#92400e;">
+            Documents à transmettre <span style="color:#dc2626;">*</span>
+        </label>
+        <div id="liste-fichiers" style="display:flex; flex-direction:column; gap:.5rem;">
+            <input type="file" name="doc_complement_0"
+                   accept=".pdf,.jpg,.jpeg,.png,.docx,.doc,.xlsx,.xls,.pptx,.ppt"
+                   style="font-size:.9rem;">
+        </div>
+        <div>
+            <button type="button" onclick="ajouterFichier()"
+                    style="background:none; border:1px dashed #f59e0b; color:#92400e; padding:.4rem .9rem; border-radius:6px; cursor:pointer; font-size:.85rem;">
+                + Ajouter un autre fichier
+            </button>
+        </div>
+        <p style="color:#92400e; font-size:.8rem; margin:0;">Formats acceptés : PDF, Word, Excel, PowerPoint, image — 10 Mo max par fichier.</p>
+        <div>
+            <button type="submit" class="btn btn-blue" style="padding:.5rem 1.25rem;">
+                Transmettre les documents
+            </button>
+        </div>
+    </form>
+    <script>
+    var compteurFichiers = 1;
+    function ajouterFichier() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.name = 'doc_complement_' + compteurFichiers;
+        input.accept = '.pdf,.jpg,.jpeg,.png,.docx,.doc,.xlsx,.xls,.pptx,.ppt';
+        input.style.fontSize = '.9rem';
+        document.getElementById('liste-fichiers').appendChild(input);
+        compteurFichiers++;
+    }
+    </script>
+    {% else %}
+    <p style="color:#92400e; font-weight:600; margin:0;">Dossier marqué incomplet — un email a été envoyé à la structure.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="form-card">
+    <h2>1. Identification du projet</h2>
+    <div class="form-group">
+        <label>Nom du projet</label>
+        <p class="info-value">{{ candidature.nomProjet }}</p>
+    </div>
+    <div class="form-group">
+        <label>Entrée dans Station T</label>
+        <p class="info-value">
+            {% if candidature.entreeStationT.value == 'option1' %}Option 01 — Réponse à un besoin filière identifié
+            {% elseif candidature.entreeStationT.value == 'option2' %}Option 02 — Réponse à un cas d'usage interfilières Station T
+            {% else %}Option 03 — Besoin complémentaire proposé par le candidat
+            {% endif %}
+        </p>
+    </div>
+    {% if candidature.filiereCandidat %}
+    <div class="form-group">
+        <label>Filière / Cas d'usage</label>
+        <p class="info-value">{{ candidature.filiereCandidat }}</p>
+    </div>
+    {% endif %}
+    <div class="form-group">
+        <label>Besoin, irritant ou opportunité traité</label>
+        <p class="info-value">{{ candidature.besoinTraite }}</p>
+    </div>
+</div>
+
+{% if not isEntreprise %}
+
+<div class="form-card">
+    <h2>2. Résumé du projet</h2>
+    {% if candidature.pitchCourt %}
+    <div class="form-group">
+        <label>Pitch court du projet</label>
+        <p class="info-value">{{ candidature.pitchCourt }}</p>
+    </div>
+    {% endif %}
+    {% if candidature.problemeIdentifie %}
+    <div class="form-group">
+        <label>Problème ou besoin identifié</label>
+        <p class="info-value">{{ candidature.problemeIdentifie }}</p>
+    </div>
+    {% endif %}
+    <div class="form-group">
+        <label>Solution proposée</label>
+        <p class="info-value">{{ candidature.descriptionProjet }}</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <h2>3. Caractère innovant et différenciation</h2>
+    <div class="form-group">
+        <label>Innovation ou différenciation</label>
+        <p class="info-value">{{ candidature.innovationDifferentiation }}</p>
+    </div>
+    {% if candidature.concurrence %}
+    <div class="form-group">
+        <label>Concurrence et alternatives existantes</label>
+        <p class="info-value">{{ candidature.concurrence }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>4. Marché, clients et usages</h2>
+    {% if candidature.clientsCibles %}
+    <div class="form-group">
+        <label>Clients ou utilisateurs cibles</label>
+        <p class="info-value">{{ candidature.clientsCibles }}</p>
+    </div>
+    {% endif %}
+    {% if candidature.preuvesBesoin %}
+    <div class="form-group">
+        <label>Preuves de besoin déjà obtenues</label>
+        <p class="info-value">{{ candidature.preuvesBesoin }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>5. Maturité de la solution</h2>
+    <div class="form-group">
+        <label>Niveau de maturité actuel</label>
+        <p class="info-value">{{ candidature.maturite.value|capitalize }}</p>
+    </div>
+    {% if candidature.etatAvancement %}
+    <div class="form-group">
+        <label>État d'avancement technique ou opérationnel</label>
+        <p class="info-value">{{ candidature.etatAvancement }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>6. Modèle économique et financement</h2>
+    <div class="form-group">
+        <label>Modèle économique envisagé</label>
+        <p class="info-value">{{ candidature.modelEconomique }}</p>
+    </div>
+    {% if candidature.besoinsFinanciers %}
+    <div class="form-group">
+        <label>Besoins financiers et ressources disponibles</label>
+        <p class="info-value">{{ candidature.besoinsFinanciers }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>7. Équipe et capacité d'exécution</h2>
+    {% if candidature.equipe %}
+    <div class="form-group">
+        <label>Composition de l'équipe</label>
+        <p class="info-value">{{ candidature.equipe }}</p>
+    </div>
+    {% endif %}
+    {% if candidature.forcesEquipe %}
+    <div class="form-group">
+        <label>Forces de l'équipe et besoins de renfort</label>
+        <p class="info-value">{{ candidature.forcesEquipe }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>8. Besoins d'accompagnement Gigamed Innovation</h2>
+    <div class="form-row">
+        {% if candidature.programmeGigamed %}
+        <div class="form-group">
+            <label>Programme souhaité</label>
+            <p class="info-value">{{ candidature.programmeGigamed.value|capitalize }}</p>
+        </div>
+        {% endif %}
+        {% if candidature.niveauAccompagnement %}
+        <div class="form-group">
+            <label>Niveau d'accompagnement</label>
+            <p class="info-value">{{ candidature.niveauAccompagnement.value|capitalize }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% if besoinsPrioritairesDecodes is not empty %}
+    <div class="form-group" style="margin-top:1rem;">
+        <label>Besoins prioritaires</label>
+        <ul style="margin:.5rem 0 0 1.25rem; padding:0;">
+            {% for besoin in besoinsPrioritairesDecodes %}
+            <li style="margin-bottom:.3rem;">{{ besoin }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% if candidature.objectifAccompagnement %}
+    <div class="form-group">
+        <label>Objectifs attendus de l'accompagnement</label>
+        <p class="info-value">{{ candidature.objectifAccompagnement }}</p>
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+
+<div class="form-card">
+    <h2>2. Solution proposée</h2>
+    <div class="form-group">
+        <label>Description synthétique de la solution</label>
+        <p class="info-value">{{ candidature.descriptionProjet }}</p>
+    </div>
+    {% if candidature.valeurAjoutee %}
+    <div class="form-group">
+        <label>Valeur ajoutée pour les utilisateurs</label>
+        <p class="info-value">{{ candidature.valeurAjoutee }}</p>
+    </div>
+    {% endif %}
+    <div class="form-group">
+        <label>Innovation ou différenciation</label>
+        <p class="info-value">{{ candidature.innovationDifferentiation }}</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <h2>3. Références, maturité et capacité de déploiement</h2>
+    <div class="form-group">
+        <label>Maturité actuelle</label>
+        <p class="info-value">{{ candidature.maturite.value|capitalize }}</p>
+    </div>
+    {% if candidature.references_ %}
+    <div class="form-group">
+        <label>Références clients, pilotes ou réalisations existantes</label>
+        <p class="info-value">{{ candidature.references_ }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>4. Proposition d'expérimentation Station T</h2>
+    {% if candidature.objectifPilote %}
+    <div class="form-group">
+        <label>Objectif du pilote proposé</label>
+        <p class="info-value">{{ candidature.objectifPilote }}</p>
+    </div>
+    {% endif %}
+    <div class="form-row">
+        {% if candidature.perimetreGeographique %}
+        <div class="form-group">
+            <label>Périmètre géographique</label>
+            <p class="info-value">{{ candidature.perimetreGeographique }}</p>
+        </div>
+        {% endif %}
+        {% if candidature.dureeExperimentation %}
+        <div class="form-group">
+            <label>Durée souhaitée</label>
+            <p class="info-value">{{ candidature.dureeExperimentation }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% if candidature.publicsCibles %}
+    <div class="form-group">
+        <label>Publics ou utilisateurs ciblés</label>
+        <p class="info-value">{{ candidature.publicsCibles }}</p>
+    </div>
+    {% endif %}
+    <div class="form-row">
+        {% if candidature.budgetMobiliser %}
+        <div class="form-group">
+            <label>Budget à mobiliser</label>
+            <p class="info-value">{{ candidature.budgetMobiliser }}</p>
+        </div>
+        {% endif %}
+        {% if candidature.moyensMobiliser %}
+        <div class="form-group">
+            <label>Moyens à mobiliser</label>
+            <p class="info-value">{{ candidature.moyensMobiliser }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% if candidature.conditionsReussite %}
+    <div class="form-group">
+        <label>Conditions de réussite</label>
+        <p class="info-value">{{ candidature.conditionsReussite }}</p>
+    </div>
+    {% endif %}
+    {% if candidature.derouteOperationnel %}
+    <div class="form-group">
+        <label>Déroulé opérationnel envisagé</label>
+        <p class="info-value">{{ candidature.derouteOperationnel }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>5. Partenaires, sites pilotes et appuis Station T</h2>
+    {% if candidature.partenairesRecherches %}
+    <div class="form-group">
+        <label>Partenaires ou sites pilotes recherchés</label>
+        <p class="info-value">{{ candidature.partenairesRecherches }}</p>
+    </div>
+    {% endif %}
+    {% if candidature.appuisStationT %}
+    <div class="form-group">
+        <label>Appuis attendus de Station T</label>
+        <ul style="margin:.5rem 0 0 1.25rem; padding:0;">
+            {% for appui in candidature.appuisStationT|split(', ') %}
+            <li style="margin-bottom:.3rem;">{{ appui }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>6. Modèle économique et conditions de déploiement</h2>
+    <div class="form-group">
+        <label>Modèle économique</label>
+        <p class="info-value">{{ candidature.modelEconomique }}</p>
+    </div>
+    {% if candidature.conditionsDeploiement %}
+    <div class="form-group">
+        <label>Conditions de déploiement après pilote</label>
+        <p class="info-value">{{ candidature.conditionsDeploiement }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>7. Impacts attendus et indicateurs</h2>
+    {% if candidature.impactAttendu %}
+    <div class="form-group">
+        <label>Impacts attendus</label>
+        <p class="info-value">{{ candidature.impactAttendu }}</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endif %}
+
+<div class="form-card">
+    <h2>{% if isEntreprise %}8{% else %}9{% endif %}. Engagements</h2>
+    <div class="form-group">
+        <p class="info-value" style="display:flex; align-items:center; gap:.5rem;">
+            {% if candidature.engagements %}
+            <span style="color:#16a34a; font-size:1.2rem;">✓</span> Engagements validés
+            {% else %}
+            <span style="color:#dc2626; font-size:1.2rem;">✗</span> Engagements non validés
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% if documents is not empty %}
+<div class="form-card">
+    <h2>{% if isEntreprise %}9{% else %}10{% endif %}. Pièces jointes</h2>
+    <div style="display:flex; flex-direction:column; gap:.75rem;">
+        {% for doc in documents %}
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:.75rem 1rem; background:#f8f9fa; border-radius:8px; border:1px solid #e5e7eb;">
+            <div>
+                <span style="font-weight:500;">{{ doc.nomDocument }}</span>
+                <span style="color:#6b7280; font-size:.85rem; margin-left:.75rem;">{{ doc.typeDocument.value|upper }}</span>
+                <span style="color:#9ca3af; font-size:.8rem; margin-left:.75rem;">{{ doc.dateUpload|date('d/m/Y') }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:.75rem;">
+                <a href="{{ asset('../ressources/uploads/candidatures/' ~ (doc.cheminDocument|split('/')|last)) }}" target="_blank"
+                   style="color:var(--bleu); text-decoration:none; font-size:.9rem; white-space:nowrap;">
+                    Télécharger ↗
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Utilisateurs — Administration{% endblock %}
+
+{% block contenu %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Gestion des utilisateurs</h1>
+        <p>{{ utilisateurs|length }} compte(s) enregistré(s) sur la plateforme</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminAfficherFormulaireCreerUtilisateur') }}" class="btn btn-primary">+ Créer un utilisateur</a>
+        <a href="{{ route('adminDashboard') }}" class="btn btn-outline-white">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}" class="admin-nav-active">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Liste des utilisateurs</h2>
+        <span class="admin-card-count">{{ utilisateurs|length }}</span>
+    </div>
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nom complet</th>
+                <th>Adresse email</th>
+                <th>Téléphone</th>
+                <th>Rôle</th>
+                <th>Vérifié</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in utilisateurs %}
+            <tr {% if u.idUtilisateur == utilisateur.idUtilisateur %}style="background:#f0f9ff;"{% endif %}>
+                <td class="td-id">{{ u.idUtilisateur }}</td>
+                <td>
+                    <a href="{{ route('adminDetailUtilisateur', {id: u.idUtilisateur}) }}" class="tlink">
+                        {{ u.prenomUtilisateur }} {{ u.nomUtilisateur }}
+                    </a>
+                    {% if u.idUtilisateur == utilisateur.idUtilisateur %}
+                    <span class="abadge" style="background:#e0f2fe; color:#0369a1; margin-left:.4rem;">vous</span>
+                    {% endif %}
+                </td>
+                <td class="td-muted">{{ u.emailUtilisateur }}</td>
+                <td class="td-muted">{{ u.telephoneUtilisateur }}</td>
+                <td>
+                    <span class="abadge" style="background:#dbeafe; color:#1d4ed8;">{{ u.roleUtilisateur.value }}</span>
+                </td>
+                <td>
+                    {% if u.emailVerifie %}
+                    <span class="abadge" style="background:#d1fae5; color:#065f46;">Oui</span>
+                    {% else %}
+                    <span class="abadge" style="background:#fee2e2; color:#991b1b;">Non</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="abtn-row">
+                        <a href="{{ route('adminDetailUtilisateur', {id: u.idUtilisateur}) }}" class="abtn abtn-slate">Détail</a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr class="admin-empty-row"><td colspan="7">Aucun utilisateur enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,298 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isAdmin = isAdmin ?? false %}
+
+{% block titre %}{{ ami.titreAmi }} — AMI{% if isAdmin %} — Administration{% endif %} — Station T{% endblock %}
+
+{% block contenu %}
+
+{% set sColor = {
+    'brouillon':  'background:#fef3c7; color:#92400e;',
+    'en attente': 'background:#fef9c3; color:#854d0e;',
+    'ouvert':     'background:#d1fae5; color:#065f46;',
+    'cloturé':    'background:#dbeafe; color:#1d4ed8;',
+    'archivé':    'background:#f3f4f6; color:#374151;'
+} %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — AMI</span>
+        <h1>{{ ami.titreAmi }}</h1>
+        <p>
+            <span class="abadge" style="{{ sColor[ami.statutAmi.value] ?? 'background:#f3f4f6; color:#374151;' }}">{{ ami.statutAmi.value }}</span>
+            &nbsp;·&nbsp; {{ ami.filiere.value|capitalize }}
+        </p>
+    </div>
+    <div class="admin-hero-right">
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        {% if ami.statutAmi.value == 'brouillon' and ami.idUtilisateur == utilisateur.idUtilisateur %}
+        <a href="{{ route('adminAfficherFormulaireCreerAmi') }}?id={{ ami.idAmi }}" class="btn" style="background:#f59e0b; color:#fff; border:none;">Continuer à remplir</a>
+        {% else %}
+        <a href="{{ route('adminAfficherFormulaireModifierAmi', {id: ami.idAmi}) }}" class="btn btn-blue">Modifier</a>
+        {% endif %}
+        <form method="POST" action="{{ route('adminSupprimerAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Supprimer définitivement cet AMI ? Cette action est irréversible.')">
+            <button type="submit" class="btn" style="background:#dc2626; color:#fff; border:none;">Supprimer</button>
+        </form>
+        {% endif %}
+        <a href="{{ route('adminAmi') }}" class="btn btn-outline-white">← Liste AMI</a>
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}" class="admin-nav-active">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Appel à Manifestation d'Intérêt</div>
+    <h1>{{ ami.titreAmi }}</h1>
+    <p>
+        <span class="ami-tag" style="{{ sColor[ami.statutAmi.value] ?? 'background:rgba(255,255,255,.15); color:#fff;' }}">{{ ami.statutAmi.value|capitalize }}</span>
+        &nbsp;·&nbsp;
+        <span class="ami-tag" style="background:var(--bleu-clair); color:var(--bleu-moyen);">{{ ami.filiere.value|capitalize }}</span>
+    </p>
+    <div class="hero-actions">
+        <a href="{{ route('listeAmi') }}" class="btn btn-outline-white">← Retour aux AMI</a>
+        {% if peutCandidater ?? false %}
+            {% if hasBesoin ?? false %}
+            <span class="btn btn-outline-white" style="opacity:.6; cursor:not-allowed;">Besoin soumis — candidature impossible</span>
+            {% elseif dejaCandidate ?? false %}
+            <span class="btn btn-outline-white" style="background:#d1fae5; color:#065f46; border-color:#6ee7b7;">Candidature déjà soumise</span>
+            {% else %}
+            <a href="{{ route('afficherFormulaireCandidatureAmi', {idAmi: ami.idAmi}) }}" class="btn btn-primary">Candidater →</a>
+            {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+{% if isAdmin %}
+<div class="form-card">
+    <h2>Statut</h2>
+    <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
+        <span class="abadge" style="font-size:.95rem; padding:.45rem .9rem; {{ sColor[ami.statutAmi.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+            {{ ami.statutAmi.value|capitalize }}
+        </span>
+        {% if ami.statutAmi.value == 'brouillon' %}
+        <form method="POST" action="{{ route('adminPublierAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Publier cet AMI ? Il passera au statut correspondant à ses dates.')">
+            <button type="submit" class="abtn abtn-blue">Publier</button>
+        </form>
+        {% elseif ami.statutAmi.value == 'en attente' %}
+        <span style="font-size:.85rem; color:#6b7280;">Ouverture automatique le {{ ami.dateOuverture|date('Y') == '2099' ? '—' : ami.dateOuverture|date('d/m/Y') }}</span>
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <form method="POST" action="{{ route('adminFinNotationAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Clôturer la notation de cet AMI ? Les candidatures éligibles passeront en instruction et les déposées seront refusées.')">
+            <button type="submit" class="abtn abtn-blue">Fin de notation</button>
+        </form>
+        {% endif %}
+        {% elseif ami.statutAmi.value == 'ouvert' %}
+        <span style="font-size:.85rem; color:#6b7280;">Clôture automatique le {{ ami.dateCloture|date('Y') == '2099' ? '—' : ami.dateCloture|date('d/m/Y') }}</span>
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <form method="POST" action="{{ route('adminFinNotationAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Clôturer la notation de cet AMI ? Les candidatures éligibles passeront en instruction et les déposées seront refusées.')">
+            <button type="submit" class="abtn abtn-blue">Fin de notation</button>
+        </form>
+        {% endif %}
+        {% elseif ami.statutAmi.value == 'cloturé' %}
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        <form method="POST" action="{{ route('adminFinNotationAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Lancer la fin de notation ? Les candidatures éligibles passeront en instruction et les déposées seront refusées.')">
+            <button type="submit" class="abtn abtn-blue">Fin de notation</button>
+        </form>
+        <a href="{{ route('adminDecisionsAmi', {id: ami.idAmi}) }}" class="abtn" style="background:#7c3aed; color:#fff;">Décisions finales</a>
+        {% endif %}
+        <form method="POST" action="{{ route('adminArchiverAmi', {id: ami.idAmi}) }}"
+              onsubmit="return confirm('Archiver cet AMI ? Cette action est définitive.')">
+            <button type="submit" class="abtn abtn-slate">Archiver</button>
+        </form>
+        {% else %}
+        <span style="font-size:.85rem; color:#9ca3af;">AMI archivé — aucune action disponible</span>
+        {% endif %}
+        {% if besoin is defined and besoin is not null %}
+        <span style="font-size:.85rem; color:var(--gris-texte); margin-left:auto;">Issu du besoin :
+            <a href="{{ route('adminDetailBesoin', {id: besoin.idBesoin}) }}" class="tlink">{{ besoin.titreBesoin }}</a>
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="form-card">
+    <h2>Calendrier</h2>
+    {% if isAdmin %}
+    <div class="form-row">
+        <div class="form-group">
+            <label>Ouverture des candidatures</label>
+            <p class="info-value">{{ ami.dateOuverture|date('Y') == '2099' ? '—' : ami.dateOuverture|date('d/m/Y') }}</p>
+        </div>
+        <div class="form-group">
+            <label>Clôture des candidatures</label>
+            <p class="info-value">{{ ami.dateCloture|date('Y') == '2099' ? '—' : ami.dateCloture|date('d/m/Y') }}</p>
+        </div>
+        <div class="form-group">
+            <label>Auditions</label>
+            <p class="info-value">{{ ami.dateAuditions|date('Y') == '2099' ? '—' : ami.dateAuditions|date('d/m/Y') }}</p>
+        </div>
+        <div class="form-group">
+            <label>Résultats</label>
+            <p class="info-value">{{ ami.dateResultats|date('Y') == '2099' ? '—' : ami.dateResultats|date('d/m/Y') }}</p>
+        </div>
+        <div class="form-group">
+            <label>Démarrage</label>
+            <p class="info-value">{{ ami.dateDemarrage|date('Y') == '2099' ? '—' : ami.dateDemarrage|date('d/m/Y') }}</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="flux-steps">
+        <div class="flux-step">
+            <div class="flux-step-num" style="background:var(--bleu-moyen);">1</div>
+            <p>Clôture<br><strong>{{ ami.dateCloture|date('d/m/Y') }}</strong></p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num" style="background:var(--bleu-moyen);">2</div>
+            <p>Auditions<br><strong>{{ ami.dateAuditions|date('d/m/Y') }}</strong></p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num" style="background:var(--bleu-fonce);">3</div>
+            <p>Résultats<br><strong>{{ ami.dateResultats|date('d/m/Y') }}</strong></p>
+        </div>
+        <div class="flux-step">
+            <div class="flux-step-num" style="background:var(--turquoise);">4</div>
+            <p>Démarrage<br><strong>{{ ami.dateDemarrage|date('d/m/Y') }}</strong></p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>Présentation</h2>
+    <div class="form-group">
+        <label>Objectif</label>
+        <p class="info-value">{{ ami.objectifAmi }}</p>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Filière</label>
+            <p class="info-value">{{ ami.filiere.value|capitalize }}</p>
+        </div>
+        <div class="form-group">
+            <label>Public visé</label>
+            <p class="info-value">{{ ami.publicVise }}</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Périmètre prioritaire</label>
+        <p class="info-value">{{ ami.perimetrePrioritaire }}</p>
+    </div>
+    <div class="form-group">
+        <label>Exemples d'innovations souhaitées</label>
+        <p class="info-value">{{ ami.exemplesInnovations }}</p>
+    </div>
+    {% if ami.partenaires %}
+    <div class="form-group">
+        <label>Partenaires</label>
+        <p class="info-value">{{ ami.partenaires }}</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-card">
+    <h2>Cas d'usage pilote</h2>
+    <div class="form-group">
+        <label>Description du cas d'usage</label>
+        <p class="info-value">{{ ami.casUsagePilote }}</p>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Périmètre</label>
+            <p class="info-value">{{ ami.perimetreCasUsage }}</p>
+        </div>
+        <div class="form-group">
+            <label>Durée indicative</label>
+            <p class="info-value">{{ ami.dureeIndicative }}</p>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Sortie attendue</label>
+        <p class="info-value">{{ ami.sortieAttendue }}</p>
+    </div>
+</div>
+
+{% if candidatures is defined %}
+<div class="form-card">
+    <h2>Candidatures reçues ({{ candidatures|length }})</h2>
+    {% if candidatures is empty %}
+    <p style="color:var(--gris-texte); font-size:.9rem; text-align:center; margin:0;">Aucune candidature reçue pour cet AMI.</p>
+    {% elseif isAdmin %}
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead><tr><th>#</th><th>Projet</th><th>Déposée le</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+        {% for c in candidatures %}
+        <tr>
+            <td class="td-id">{{ c.idCandidature }}</td>
+            <td><a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="tlink">{{ c.nomProjet }}</a></td>
+            <td class="td-muted">{{ c.dateDepot|date('d/m/Y') }}</td>
+            <td><span class="abadge" style="background:#ede9fe; color:#5b21b6;">{{ c.statutCandidature.value }}</span></td>
+            <td><a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="abtn abtn-slate">Voir</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    {% for c in candidatures %}
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:.75rem 0; border-bottom:1px solid var(--gris-clair); gap:1rem; flex-wrap:wrap;">
+        <div>
+            {% if role == 'partenaire' %}
+            <a href="{{ route('partenaireDetailCandidature', {id: c.idCandidature}) }}" style="font-weight:700; color:var(--bleu-fonce); text-decoration:none;">{{ c.nomProjet }}</a>
+            {% else %}
+            <a href="{{ route('detailCandidature', {id: c.idCandidature}) }}" style="font-weight:700; color:var(--bleu-fonce); text-decoration:none;">{{ c.nomProjet }}</a>
+            {% endif %}
+            <span style="font-size:.8rem; color:var(--gris-texte); margin-left:.6rem;">— {{ c.dateDepot|date('d/m/Y') }}</span>
+        </div>
+        <span class="abadge" style="
+            {% if c.statutCandidature.value == 'déposé' %}background:#dbeafe; color:#1d4ed8;
+            {% elseif c.statutCandidature.value == 'recevable' %}background:#d1fae5; color:#065f46;
+            {% elseif c.statutCandidature.value == 'en instruction' %}background:#ede9fe; color:#5b21b6;
+            {% elseif c.statutCandidature.value == 'sélectionné' %}background:#d1fae5; color:#065f46;
+            {% elseif c.statutCandidature.value == 'refusé' %}background:#fee2e2; color:#991b1b;
+            {% else %}background:#f3f4f6; color:#374151;{% endif %}">
+            {{ c.statutCandidature.value|capitalize }}
+        </span>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+{% endif %}
+
+{% if not isAdmin %}
+{% if (peutCandidater ?? false) and not (hasBesoin ?? false) and not (dejaCandidate ?? false) %}
+<div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+    <a href="{{ route('afficherFormulaireCandidatureAmi', {idAmi: ami.idAmi}) }}" class="btn btn-blue" style="flex:1; justify-content:center;">
+        Candidater à cet AMI →
+    </a>
+    <a href="{{ route('listeAmi') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">← Retour aux AMI</a>
+</div>
+{% else %}
+<div style="margin-bottom:3rem;">
+    <a href="{{ route('listeAmi') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">← Retour aux AMI</a>
+</div>
+{% endif %}
+{% endif %}
+
+</div>
+
+{% endblock %}

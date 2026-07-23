@@ -1,0 +1,608 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isAdmin = isAdmin ?? false %}
+{% set isModification = isAdmin and cible is defined and cible is not null %}
+{% set profil = isModification ? cible : utilisateur %}
+
+{% block titre %}
+    {% if isModification %}Modifier {{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }} — Administration
+    {% elseif isAdmin %}Créer un utilisateur — Administration
+    {% else %}Modifier mes informations — Station T
+    {% endif %}
+{% endblock %}
+
+{% block contenu %}
+
+{% set v = ancien ?? {} %}
+{% set s = ancienneStructure ?? {} %}
+{% set roleActuel = v.role ?? (isModification ? cible.roleUtilisateur.value : '') %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration{% if isModification %} — Utilisateur{% endif %}</span>
+        <h1>{% if isModification %}Modifier {{ cible.prenomUtilisateur }} {{ cible.nomUtilisateur }}{% else %}Créer un utilisateur{% endif %}</h1>
+        <p>{% if isModification %}{{ cible.emailUtilisateur }} &nbsp;·&nbsp; {{ roleActuel }}{% else %}Un email sera envoyé à l'utilisateur pour qu'il choisisse son mot de passe et active son compte.{% endif %}</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if isModification %}
+        <a href="{{ route('adminDetailUtilisateur', {id: cible.idUtilisateur}) }}" class="btn btn-outline-white">← Retour au profil</a>
+        {% else %}
+        <a href="{{ route('adminUtilisateurs') }}" class="btn btn-outline-white">← Retour aux utilisateurs</a>
+        {% endif %}
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}" class="admin-nav-active">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Mon espace</div>
+    <h1>Modifier mes informations</h1>
+    <p>Mettez à jour vos informations personnelles{% if structure is not null %} et celles de votre structure{% endif %}.</p>
+    <div class="hero-actions">
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Retour</a>
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+<form method="POST" action="{% if isModification %}{{ route('adminModifierUtilisateur', {id: cible.idUtilisateur}) }}{% elseif isAdmin %}{{ route('adminCreerUtilisateur') }}{% else %}{{ route('modifierProfil') }}{% endif %}">
+
+        <div class="form-card">
+        <h2>{% if not isAdmin %}1. {% endif %}Informations personnelles</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="prenom">Prénom <span class="required">*</span></label>
+                <input type="text" id="prenom" name="prenom" required
+                       value="{{ v.prenom ?? (isModification ? cible.prenomUtilisateur : (not isAdmin ? utilisateur.prenomUtilisateur : '')) }}"
+                       {% if not isModification and not isAdmin %}{% else %}{% endif %}
+                       placeholder="Ex : Marie">
+            </div>
+            <div class="form-group">
+                <label for="nom">Nom <span class="required">*</span></label>
+                <input type="text" id="nom" name="nom" required
+                       value="{{ v.nom ?? (isModification ? cible.nomUtilisateur : (not isAdmin ? utilisateur.nomUtilisateur : '')) }}"
+                       placeholder="Ex : Dupont">
+            </div>
+        </div>
+
+        <div class="form-row">
+                        {% if isAdmin and not isModification %}
+            <div class="form-group">
+                <label for="email">Adresse email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" value="{{ v.email ?? '' }}" required
+                       placeholder="marie.dupont@exemple.fr">
+            </div>
+            {% elseif isAdmin and isModification %}
+            <div class="form-group">
+                <label>Adresse email</label>
+                <p class="form-hint" style="margin:0; padding:.55rem .75rem; background:#f9fafb; border:1px solid var(--gris-moyen); border-radius:var(--radius); color:var(--gris-texte);">
+                    {{ cible.emailUtilisateur }}
+                </p>
+                <p class="form-hint">L'email ne peut pas être modifié ici.</p>
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label>Adresse email <span class="optional">(non modifiable)</span></label>
+                <input type="email" value="{{ utilisateur.emailUtilisateur }}" disabled>
+            </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="telephone">Téléphone <span class="required">*</span></label>
+                <input type="tel" id="telephone" name="telephone" required
+                       value="{{ v.telephone ?? (isModification ? cible.telephoneUtilisateur : (not isAdmin ? utilisateur.telephoneUtilisateur : '')) }}"
+                       placeholder="06 12 34 56 78">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="statut">Fonction / Statut <span class="required">*</span></label>
+            <input type="text" id="statut" name="statut" required
+                   value="{{ v.statut ?? (isModification ? cible.statutUtilisateur : (not isAdmin ? utilisateur.statutUtilisateur : '')) }}"
+                   placeholder="Ex : Chargé de mission, Directeur, Développeur...">
+        </div>
+    </div>
+
+        {% if isAdmin %}
+    <div class="form-card">
+        <h2>Accès et rôle</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="role">Rôle <span class="required">*</span></label>
+                <select id="role" name="role" required>
+                    {% if not isModification %}<option value="">— Sélectionnez —</option>{% endif %}
+                    {% for r in roles %}
+                    <option value="{{ r.value }}" {% if roleActuel == r.value %}selected{% endif %}>{{ r.value }}</option>
+                    {% endfor %}
+                </select>
+                {% if isModification %}
+                {% if structure is not null %}
+                <p class="form-hint">Attention : si vous changez le rôle vers startup/entreprise, la structure actuelle reste liée. Si vous changez vers un rôle sans structure, la structure sera conservée en base mais déliée.</p>
+                {% else %}
+                <p class="form-hint">Pour les rôles startup et entreprise, vous devrez remplir les informations de structure ci-dessous.</p>
+                {% endif %}
+                {% else %}
+                <p class="form-hint" style="margin:0; padding:.75rem; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; color:#065f46;">
+                    Un email sera envoyé à l'utilisateur pour qu'il choisisse lui-même son mot de passe.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+        {% if isAdmin %}
+
+        {% if isModification and structure is not null %}
+                <div class="form-card">
+            <h2>Structure — {{ structure.nomStructure }}</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nomStructure">Nom de la structure <span class="required">*</span></label>
+                    <input type="text" id="nomStructure" name="nomStructure" placeholder="Nom officiel"
+                           value="{{ s.nomStructure ?? structure.nomStructure }}">
+                </div>
+                <div class="form-group">
+                    <label for="formeJuridique">Forme juridique <span class="required">*</span></label>
+                    <input type="text" id="formeJuridique" name="formeJuridique" placeholder="SAS, SARL, Association…"
+                           value="{{ s.formeJuridique ?? structure.formeJuridique }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="numSIRET_RNA">Numéro SIRET / RNA <span class="required">*</span></label>
+                    <input type="text" id="numSIRET_RNA" name="numSIRET_RNA" placeholder="14 chiffres ou W + 9 car."
+                           value="{{ s.numSIRET_RNA ?? structure.numSIRET_RNA }}">
+                </div>
+                <div class="form-group">
+                    <label for="dateCreation">Date de création <span class="required">*</span></label>
+                    <input type="date" id="dateCreation" name="dateCreation"
+                           value="{{ s.dateCreation ?? structure.dateCreation|date('Y-m-d') }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="adresseSiege">Adresse du siège <span class="required">*</span></label>
+                    <input type="text" id="adresseSiege" name="adresseSiege" placeholder="Numéro, rue, lieu-dit…"
+                           value="{{ s.adresseSiege ?? structure.adresseSiege }}">
+                </div>
+                <div class="form-group">
+                    <label for="commune">Commune <span class="required">*</span></label>
+                    <input type="text" id="commune" name="commune" placeholder="Agde, Pézenas…"
+                           value="{{ s.commune ?? structure.commune }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="siteWeb">Site web</label>
+                <input type="url" id="siteWeb" name="siteWeb" placeholder="https://..."
+                       value="{{ s.siteWeb ?? structure.siteWeb ?? '' }}">
+            </div>
+
+            <div id="existing-section-startup" {% if structure.typeStructure.value != 'startup' %}style="display:none;"{% endif %}>
+                <div class="form-group">
+                    <label for="statutJuridiqueS">Statut actuel <span class="required">*</span></label>
+                    <select id="statutJuridiqueS" name="statutJuridiqueS">
+                        <option value="">— Sélectionnez —</option>
+                        {% for sj in statutsJuridiquesS %}
+                        <option value="{{ sj.value }}"
+                            {% if (s.statutJuridiqueS ?? (structure.statutJuridiqueS ? structure.statutJuridiqueS.value : '')) == sj.value %}selected{% endif %}>
+                            {{ sj.value|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nombreAssocies">Associés / fondateurs <span class="required">*</span></label>
+                        <input type="number" id="nombreAssocies" name="nombreAssocies" min="0" placeholder="ex : 2"
+                               value="{{ s.nombreAssocies ?? structure.nombreAssocies ?? '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="nombreSalaries">Salariés <span class="required">*</span></label>
+                        <input type="number" id="nombreSalaries" name="nombreSalaries" min="0" placeholder="ex : 0"
+                               value="{{ s.nombreSalaries ?? structure.nombreSalaries ?? '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div id="existing-section-entreprise" {% if structure.typeStructure.value != 'entreprise' %}style="display:none;"{% endif %}>
+                <div class="form-group">
+                    <label for="statutJuridiqueE">Nature du candidat <span class="required">*</span></label>
+                    <select id="statutJuridiqueE" name="statutJuridiqueE">
+                        <option value="">— Sélectionnez —</option>
+                        {% for sj in statutsJuridiquesE %}
+                        <option value="{{ sj.value }}"
+                            {% if (s.statutJuridiqueE ?? (structure.statutJuridiqueE ? structure.statutJuridiqueE.value : '')) == sj.value %}selected{% endif %}>
+                            {{ sj.value|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="effectif">Effectif <span class="required">*</span></label>
+                        <input type="number" id="effectif" name="effectif" min="0" placeholder="ex : 12"
+                               value="{{ s.effectif ?? structure.effectif ?? '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="chiffreAffaires">Chiffre d'affaires (€) <span class="required">*</span></label>
+                        <input type="number" id="chiffreAffaires" name="chiffreAffaires" min="0" step="0.01" placeholder="ex : 250000"
+                               value="{{ s.chiffreAffaires ?? structure.chiffreAffaires ?? '' }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="hidden" name="implantationTerritoire" value="0">
+                            <input type="checkbox" name="implantationTerritoire" value="1"
+                                {% if (s.implantationTerritoire ?? '') == '1' or (s is empty and structure.implantationTerritoire) %}checked{% endif %}>
+                            Implanté sur le territoire
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="hidden" name="implantationEnvisagee" value="0">
+                            <input type="checkbox" name="implantationEnvisagee" value="1"
+                                {% if (s.implantationEnvisagee ?? '') == '1' or (s is empty and structure.implantationEnvisagee) %}checked{% endif %}>
+                            Implantation envisagée
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-card">
+            <h2>Référent de la structure</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="referentNom">Nom <span class="required">*</span></label>
+                    <input type="text" id="referentNom" name="referentNom" placeholder="Dupont"
+                           value="{{ s.referentNom ?? structure.referentNom }}">
+                </div>
+                <div class="form-group">
+                    <label for="referentFonction">Fonction <span class="required">*</span></label>
+                    <input type="text" id="referentFonction" name="referentFonction" placeholder="Gérant, DG, Président…"
+                           value="{{ s.referentFonction ?? structure.referentFonction }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="referentEmail">Email <span class="required">*</span></label>
+                    <input type="email" id="referentEmail" name="referentEmail" placeholder="referent@structure.fr"
+                           value="{{ s.referentEmail ?? structure.referentEmail }}">
+                </div>
+                <div class="form-group">
+                    <label for="referentTelephone">Téléphone <span class="required">*</span></label>
+                    <input type="tel" id="referentTelephone" name="referentTelephone" placeholder="06 12 34 56 78"
+                           value="{{ s.referentTelephone ?? structure.referentTelephone }}">
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+                <div id="structure-section" style="{% if not isModification %}display:none;{% elseif structure is null %}display:none;{% endif %}">
+
+            <div class="form-card">
+                <h2>{% if isModification %}Créer la structure{% else %}Structure{% endif %}</h2>
+                {% if isModification and structure is null %}
+                <p class="form-hint" style="margin-bottom:1.25rem;">Cet utilisateur n'a pas encore de structure associée. Remplissez les champs ci-dessous pour en créer une.</p>
+                {% endif %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nomStructure">Nom de la structure <span class="required">*</span></label>
+                        <input type="text" id="nomStructure" name="nomStructure" value="{{ s.nomStructure ?? '' }}" placeholder="Nom officiel">
+                    </div>
+                    <div class="form-group">
+                        <label for="formeJuridique">Forme juridique <span class="required">*</span></label>
+                        <input type="text" id="formeJuridique" name="formeJuridique" value="{{ s.formeJuridique ?? '' }}" placeholder="Ex : SAS, SARL, Association...">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="numSIRET_RNA">Numéro SIRET / RNA <span class="required">*</span></label>
+                        <input type="text" id="numSIRET_RNA" name="numSIRET_RNA" value="{{ s.numSIRET_RNA ?? '' }}" placeholder="14 chiffres ou W + 9 caractères">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateCreation">Date de création <span class="required">*</span></label>
+                        <input type="date" id="dateCreation" name="dateCreation" value="{{ s.dateCreation ?? '' }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adresseSiege">Adresse du siège <span class="required">*</span></label>
+                        <input type="text" id="adresseSiege" name="adresseSiege" value="{{ s.adresseSiege ?? '' }}" placeholder="Numéro, rue, lieu-dit…">
+                    </div>
+                    <div class="form-group">
+                        <label for="commune">Commune <span class="required">*</span></label>
+                        <input type="text" id="commune" name="commune" value="{{ s.commune ?? '' }}" placeholder="Agde, Pézenas…">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="siteWeb">Site web</label>
+                    <input type="url" id="siteWeb" name="siteWeb" value="{{ s.siteWeb ?? '' }}" placeholder="https://...">
+                </div>
+
+                <div id="section-startup" class="{% if not isModification %}form-hidden{% endif %}" style="display:none;">
+                    <div class="form-group">
+                        <label for="statutJuridiqueS">Statut actuel <span class="required">*</span></label>
+                        <select id="statutJuridiqueS" name="statutJuridiqueS">
+                            <option value="">— Sélectionnez —</option>
+                            {% for sj in statutsJuridiquesS %}
+                            <option value="{{ sj.value }}" {% if (s.statutJuridiqueS ?? '') == sj.value %}selected{% endif %}>{{ sj.value|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nombreAssocies">Nombre d'associés / fondateurs <span class="required">*</span></label>
+                            <input type="number" id="nombreAssocies" name="nombreAssocies" min="0" value="{{ s.nombreAssocies ?? '' }}" placeholder="ex : 2">
+                        </div>
+                        <div class="form-group">
+                            <label for="nombreSalaries">Nombre de salariés <span class="required">*</span></label>
+                            <input type="number" id="nombreSalaries" name="nombreSalaries" min="0" value="{{ s.nombreSalaries ?? '' }}" placeholder="ex : 0">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="section-entreprise" style="display:none;">
+                    <div class="form-group">
+                        <label for="statutJuridiqueE">Nature du candidat <span class="required">*</span></label>
+                        <select id="statutJuridiqueE" name="statutJuridiqueE">
+                            <option value="">— Sélectionnez —</option>
+                            {% for sj in statutsJuridiquesE %}
+                            <option value="{{ sj.value }}" {% if (s.statutJuridiqueE ?? '') == sj.value %}selected{% endif %}>{{ sj.value|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="effectif">Effectif <span class="required">*</span></label>
+                            <input type="number" id="effectif" name="effectif" min="0" value="{{ s.effectif ?? '' }}" placeholder="ex : 12">
+                        </div>
+                        <div class="form-group">
+                            <label for="chiffreAffaires">Chiffre d'affaires (€) <span class="required">*</span></label>
+                            <input type="number" id="chiffreAffaires" name="chiffreAffaires" min="0" step="0.01" value="{{ s.chiffreAffaires ?? '' }}" placeholder="ex : 250000">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>
+                                <input type="hidden" name="implantationTerritoire" value="0">
+                                <input type="checkbox" name="implantationTerritoire" value="1" {% if (s.implantationTerritoire ?? '') == '1' %}checked{% endif %}>
+                                Déjà implanté sur le territoire
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="hidden" name="implantationEnvisagee" value="0">
+                                <input type="checkbox" name="implantationEnvisagee" value="1" {% if (s.implantationEnvisagee ?? '') == '1' %}checked{% endif %}>
+                                Implantation envisagée sur le territoire
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h2>Référent de la structure</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="referentNom">Nom du référent <span class="required">*</span></label>
+                        <input type="text" id="referentNom" name="referentNom" value="{{ s.referentNom ?? '' }}" placeholder="Dupont">
+                    </div>
+                    <div class="form-group">
+                        <label for="referentFonction">Fonction <span class="required">*</span></label>
+                        <input type="text" id="referentFonction" name="referentFonction" value="{{ s.referentFonction ?? '' }}" placeholder="Gérant, DG, Président…">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="referentEmail">Email du référent <span class="required">*</span></label>
+                        <input type="email" id="referentEmail" name="referentEmail" value="{{ s.referentEmail ?? '' }}" placeholder="referent@structure.fr">
+                    </div>
+                    <div class="form-group">
+                        <label for="referentTelephone">Téléphone du référent <span class="required">*</span></label>
+                        <input type="tel" id="referentTelephone" name="referentTelephone" value="{{ s.referentTelephone ?? '' }}" placeholder="06 12 34 56 78">
+                    </div>
+                </div>
+            </div>
+
+        </div>        {% endif %}
+
+    {% else %}
+        {% if structure is not null %}
+
+    <div class="form-card">
+        <h2>2. Votre structure</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nomStructure">Nom de la structure</label>
+                <input type="text" id="nomStructure" name="nomStructure" required value="{{ v.nomStructure ?? structure.nomStructure }}">
+            </div>
+            <div class="form-group">
+                <label for="formeJuridique">Forme juridique</label>
+                <input type="text" id="formeJuridique" name="formeJuridique" required value="{{ v.formeJuridique ?? structure.formeJuridique }}" placeholder="SAS, SARL, Association…">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="numSIRET_RNA">SIRET / RNA</label>
+                <input type="text" id="numSIRET_RNA" name="numSIRET_RNA" required value="{{ v.numSIRET_RNA ?? structure.numSIRET_RNA }}">
+            </div>
+            <div class="form-group">
+                <label for="dateCreation">Date de création</label>
+                <input type="date" id="dateCreation" name="dateCreation" required value="{{ v.dateCreation ?? structure.dateCreation|date('Y-m-d') }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="adresseSiege">Adresse du siège</label>
+            <input type="text" id="adresseSiege" name="adresseSiege" required value="{{ v.adresseSiege ?? structure.adresseSiege }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="commune">Commune</label>
+                <input type="text" id="commune" name="commune" required value="{{ v.commune ?? structure.commune }}">
+            </div>
+            <div class="form-group">
+                <label for="siteWeb">Site web <span class="optional">(optionnel)</span></label>
+                <input type="url" id="siteWeb" name="siteWeb" value="{{ v.siteWeb ?? structure.siteWeb ?? '' }}">
+            </div>
+        </div>
+    </div>
+
+    {% if structure.typeStructure.value == 'startup' %}
+    <div class="form-card">
+        <h2>3. Informations startup</h2>
+        <div class="form-group">
+            <label for="statutJuridiqueS">Statut actuel</label>
+            <select id="statutJuridiqueS" name="statutJuridiqueS" required>
+                <option value="">— Sélectionnez —</option>
+                {% set sjsVal = v.statutJuridiqueS ?? (structure.statutJuridiqueS ? structure.statutJuridiqueS.value : '') %}
+                <option value="startup moins 3 ans" {% if sjsVal == 'startup moins 3 ans' %}selected{% endif %}>Startup créée depuis moins de 3 ans</option>
+                <option value="micro-entreprise" {% if sjsVal == 'micro-entreprise' %}selected{% endif %}>Micro-entreprise / entrepreneur individuel</option>
+                <option value="autre" {% if sjsVal == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombreAssocies">Nombre d'associés / fondateurs</label>
+                <input type="number" id="nombreAssocies" name="nombreAssocies" min="0" required placeholder="ex : 2" value="{{ v.nombreAssocies ?? structure.nombreAssocies ?? '' }}">
+            </div>
+            <div class="form-group">
+                <label for="nombreSalaries">Nombre de salariés</label>
+                <input type="number" id="nombreSalaries" name="nombreSalaries" min="0" required placeholder="ex : 0" value="{{ v.nombreSalaries ?? structure.nombreSalaries ?? '' }}">
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if structure.typeStructure.value == 'entreprise' %}
+    <div class="form-card">
+        <h2>3. Informations entreprise</h2>
+        <div class="form-group">
+            <label for="statutJuridiqueE">Nature du candidat</label>
+            <select id="statutJuridiqueE" name="statutJuridiqueE" required>
+                <option value="">— Sélectionnez —</option>
+                {% set sjeVal = v.statutJuridiqueE ?? (structure.statutJuridiqueE ? structure.statutJuridiqueE.value : '') %}
+                <option value="startup plus 3 ans" {% if sjeVal == 'startup plus 3 ans' %}selected{% endif %}>Startup de plus de 3 ans</option>
+                <option value="collectif" {% if sjeVal == 'collectif' %}selected{% endif %}>Collectif d'entreprises</option>
+                <option value="association" {% if sjeVal == 'association' %}selected{% endif %}>Association / structure ESS</option>
+                <option value="laboratoire" {% if sjeVal == 'laboratoire' %}selected{% endif %}>Laboratoire / organisme de recherche</option>
+                <option value="consortium" {% if sjeVal == 'consortium' %}selected{% endif %}>Consortium / groupement</option>
+                <option value="autre" {% if sjeVal == 'autre' %}selected{% endif %}>Autre</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="effectif">Effectif actuel</label>
+                <input type="number" id="effectif" name="effectif" min="0" required placeholder="ex : 12" value="{{ v.effectif ?? structure.effectif ?? '' }}">
+            </div>
+            <div class="form-group">
+                <label for="chiffreAffaires">Chiffre d'affaires (€)</label>
+                <input type="number" id="chiffreAffaires" name="chiffreAffaires" min="0" step="0.01" required placeholder="ex : 250000" value="{{ v.chiffreAffaires ?? structure.chiffreAffaires ?? '' }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-check">
+                <input type="checkbox" id="implantationTerritoire" name="implantationTerritoire" value="1" {% if v.implantationTerritoire ?? structure.implantationTerritoire %}checked{% endif %}>
+                <label for="implantationTerritoire">Déjà implanté sur le territoire</label>
+            </div>
+            <div class="form-check">
+                <input type="checkbox" id="implantationEnvisagee" name="implantationEnvisagee" value="1" {% if v.implantationEnvisagee ?? structure.implantationEnvisagee %}checked{% endif %}>
+                <label for="implantationEnvisagee">Implantation envisagée sur le territoire</label>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="form-card">
+        <h2>4. Référent de la structure</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="referentNom">Nom du référent</label>
+                <input type="text" id="referentNom" name="referentNom" required value="{{ v.referentNom ?? structure.referentNom }}">
+            </div>
+            <div class="form-group">
+                <label for="referentFonction">Fonction</label>
+                <input type="text" id="referentFonction" name="referentFonction" required value="{{ v.referentFonction ?? structure.referentFonction }}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="referentEmail">Email du référent</label>
+                <input type="email" id="referentEmail" name="referentEmail" required value="{{ v.referentEmail ?? structure.referentEmail }}">
+            </div>
+            <div class="form-group">
+                <label for="referentTelephone">Téléphone du référent</label>
+                <input type="tel" id="referentTelephone" name="referentTelephone" required value="{{ v.referentTelephone ?? structure.referentTelephone }}">
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+    {% endif %}
+    <div style="display:flex; gap:1rem; margin-bottom:3rem;">
+        {% if isModification %}
+        <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+        <a href="{{ route('adminDetailUtilisateur', {id: cible.idUtilisateur}) }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        {% elseif isAdmin %}
+        <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Créer le compte</button>
+        <a href="{{ route('adminUtilisateurs') }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        {% else %}
+        <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        {% endif %}
+    </div>
+
+</form>
+
+</div>
+
+{% if isAdmin %}
+<script>
+(function() {
+    var roleSelect = document.getElementById('role');
+    if (!roleSelect) return;
+
+    var existingStartup    = document.getElementById('existing-section-startup');
+    var existingEntreprise = document.getElementById('existing-section-entreprise');
+    var structureSection   = document.getElementById('structure-section');
+    var sectionStartup     = document.getElementById('section-startup');
+    var sectionEntreprise  = document.getElementById('section-entreprise');
+
+    function update() {
+        var role = roleSelect.value;
+
+        if (existingStartup)    existingStartup.style.display    = (role === 'startup')    ? '' : 'none';
+        if (existingEntreprise) existingEntreprise.style.display = (role === 'entreprise') ? '' : 'none';
+
+        if (structureSection) {
+            var show = (role === 'startup' || role === 'entreprise');
+            structureSection.style.display = show ? '' : 'none';
+            if (sectionStartup)    sectionStartup.style.display    = (role === 'startup')    ? '' : 'none';
+            if (sectionEntreprise) sectionEntreprise.style.display = (role === 'entreprise') ? '' : 'none';
+        }
+    }
+
+    roleSelect.addEventListener('change', update);
+    update();
+})();
+</script>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Inscription — Station T{% endblock %}
+
+{% block contenu %}
+{% set v = ancien ?? {} %}
+
+<section class="hero">
+    <div class="hero-tag">Compte</div>
+    <h1>Créer un compte</h1>
+    <p>Rejoignez Station T en quelques étapes. Inscrivez-vous en tant que startup, entreprise ou porteur de projet.</p>
+    <div class="hero-actions">
+        <a href="{{ route('afficherFormulaireConnexion') }}" class="btn btn-outline-white">← Se connecter</a>
+    </div>
+</section>
+
+<div class="page-form-wide">
+
+    <form method="post" action="{{ route('inscrire') }}" id="formInscription">
+
+                <div class="form-card">
+            <h2>1. Informations personnelles</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nom">Nom</label>
+                    <input type="text" id="nom" name="nom" required placeholder="Dupont" value="{{ v.nom ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="prenom">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" required placeholder="Marie" value="{{ v.prenom ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Adresse email</label>
+                    <input type="email" id="email" name="email" required placeholder="marie.dupont@exemple.fr" value="{{ v.email ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="telephone">Téléphone</label>
+                    <input type="tel" id="telephone" name="telephone" required placeholder="06 12 34 56 78" value="{{ v.telephone ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="statut">Fonction / Statut</label>
+                <input type="text" id="statut" name="statut" required placeholder="ex : Directrice, Chef de projet, Fondateur…" value="{{ v.statut ?? '' }}">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="mot-de-passe">Mot de passe</label>
+                    <input type="password" id="mot-de-passe" name="mot-de-passe" required
+                           placeholder="Min. 8 car., 1 maj., 1 chiffre">
+                </div>
+                <div class="form-group">
+                    <label for="mot-de-passe-confirm">Confirmer le mot de passe</label>
+                    <input type="password" id="mot-de-passe-confirm" name="mot-de-passe-confirm" required
+                           placeholder="Répétez le mot de passe">
+                </div>
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>2. Type de compte</h2>
+
+            <div class="form-group">
+                <label for="typeStructure">Vous êtes</label>
+                <select id="typeStructure" name="typeStructure" required>
+                    <option value="" disabled {{ v.typeStructure ?? '' == '' ? 'selected' : '' }}>Sélectionnez…</option>
+                    <option value="startup" {{ v.typeStructure ?? '' == 'startup' ? 'selected' : '' }}>Startup</option>
+                    <option value="entreprise" {{ v.typeStructure ?? '' == 'entreprise' ? 'selected' : '' }}>Entreprise / Structure existante</option>
+                    <option value="porteur" {{ v.typeStructure ?? '' == 'porteur' ? 'selected' : '' }}>Porteur de projet individuel</option>
+                </select>
+            </div>
+        </div>
+
+                <div class="form-card" id="section-porteur" style="display:none">
+            <h2>Porteur de projet individuel</h2>
+            <p>Vous vous inscrivez en tant que porteur de projet individuel. Aucune structure n'est requise pour créer votre compte.</p>
+        </div>
+
+                <div class="form-card" id="section-structure">
+            <h2>3. Votre structure</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nomStructure">Nom de la structure</label>
+                    <input type="text" id="nomStructure" name="nomStructure" required placeholder="Nom officiel" value="{{ v.nomStructure ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="formeJuridique">Forme juridique</label>
+                    <input type="text" id="formeJuridique" name="formeJuridique" required placeholder="SAS, SARL, Association…" value="{{ v.formeJuridique ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="numSIRET_RNA">Numéro SIRET ou RNA</label>
+                    <input type="text" id="numSIRET_RNA" name="numSIRET_RNA" required
+                           placeholder="14 chiffres ou W + 9 car." value="{{ v.numSIRET_RNA ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="dateCreation">Date de création</label>
+                    <input type="date" id="dateCreation" name="dateCreation" required value="{{ v.dateCreation ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="adresseSiege">Adresse du siège social</label>
+                <input type="text" id="adresseSiege" name="adresseSiege" required placeholder="Numéro, rue, lieu-dit…" value="{{ v.adresseSiege ?? '' }}">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="commune">Commune</label>
+                    <input type="text" id="commune" name="commune" required placeholder="Agde, Pézenas…" value="{{ v.commune ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="siteWeb">Site web <span class="optional">(optionnel)</span></label>
+                    <input type="url" id="siteWeb" name="siteWeb" placeholder="https://…" value="{{ v.siteWeb ?? '' }}">
+                </div>
+            </div>
+        </div>
+
+                <div class="form-card" id="section-startup" style="display:none">
+            <h2>4. Informations startup</h2>
+
+            <div class="form-group">
+                <label for="statutJuridiqueS">Statut actuel</label>
+                <select id="statutJuridiqueS" name="statutJuridiqueS">
+                    <option value="">— Sélectionnez —</option>
+                    <option value="startup moins 3 ans" {{ v.statutJuridiqueS ?? '' == 'startup moins 3 ans' ? 'selected' : '' }}>Startup créée depuis moins de 3 ans</option>
+                    <option value="micro-entreprise" {{ v.statutJuridiqueS ?? '' == 'micro-entreprise' ? 'selected' : '' }}>Micro-entreprise / entrepreneur individuel</option>
+                    <option value="autre" {{ v.statutJuridiqueS ?? '' == 'autre' ? 'selected' : '' }}>Autre</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nombreAssocies">Nombre d'associés / fondateurs</label>
+                    <input type="number" id="nombreAssocies" name="nombreAssocies" min="0" placeholder="ex : 2" value="{{ v.nombreAssocies ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="nombreSalaries">Nombre de salariés</label>
+                    <input type="number" id="nombreSalaries" name="nombreSalaries" min="0" placeholder="ex : 0" value="{{ v.nombreSalaries ?? '' }}">
+                </div>
+            </div>
+        </div>
+
+                <div class="form-card" id="section-entreprise" style="display:none">
+            <h2>4. Informations entreprise</h2>
+
+            <div class="form-group">
+                <label for="statutJuridiqueE">Nature du candidat</label>
+                <select id="statutJuridiqueE" name="statutJuridiqueE">
+                    <option value="">— Sélectionnez —</option>
+                    <option value="startup plus 3 ans" {{ v.statutJuridiqueE ?? '' == 'startup plus 3 ans' ? 'selected' : '' }}>Startup de plus de 3 ans</option>
+                    <option value="collectif" {{ v.statutJuridiqueE ?? '' == 'collectif' ? 'selected' : '' }}>Collectif d'entreprises</option>
+                    <option value="association" {{ v.statutJuridiqueE ?? '' == 'association' ? 'selected' : '' }}>Association / structure ESS</option>
+                    <option value="laboratoire" {{ v.statutJuridiqueE ?? '' == 'laboratoire' ? 'selected' : '' }}>Laboratoire / organisme de recherche</option>
+                    <option value="consortium" {{ v.statutJuridiqueE ?? '' == 'consortium' ? 'selected' : '' }}>Consortium / groupement</option>
+                    <option value="autre" {{ v.statutJuridiqueE ?? '' == 'autre' ? 'selected' : '' }}>Autre</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="effectif">Effectif actuel</label>
+                    <input type="number" id="effectif" name="effectif" min="0" placeholder="ex : 12" value="{{ v.effectif ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="chiffreAffaires">Chiffre d'affaires (€)</label>
+                    <input type="number" id="chiffreAffaires" name="chiffreAffaires" min="0" step="0.01" placeholder="ex : 250000" value="{{ v.chiffreAffaires ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-check">
+                    <input type="checkbox" id="implantationTerritoire" name="implantationTerritoire" value="1" {{ v.implantationTerritoire ?? '' ? 'checked' : '' }}>
+                    <label for="implantationTerritoire">Déjà implanté sur le territoire</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" id="implantationEnvisagee" name="implantationEnvisagee" value="1" {{ v.implantationEnvisagee ?? '' ? 'checked' : '' }}>
+                    <label for="implantationEnvisagee">Implantation envisagée sur le territoire</label>
+                </div>
+            </div>
+        </div>
+
+                <div class="form-card" id="section-referent">
+            <h2>5. Référent de la structure</h2>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="referentNom">Nom du référent</label>
+                    <input type="text" id="referentNom" name="referentNom" required placeholder="Dupont" value="{{ v.referentNom ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="referentFonction">Fonction</label>
+                    <input type="text" id="referentFonction" name="referentFonction" required placeholder="Gérant, DG, Président…" value="{{ v.referentFonction ?? '' }}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="referentEmail">Email du référent</label>
+                    <input type="email" id="referentEmail" name="referentEmail" required placeholder="referent@structure.fr" value="{{ v.referentEmail ?? '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="referentTelephone">Téléphone du référent</label>
+                    <input type="tel" id="referentTelephone" name="referentTelephone" required placeholder="06 12 34 56 78" value="{{ v.referentTelephone ?? '' }}">
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; margin-bottom:3rem;">
+            <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Créer mon compte</button>
+            <a href="{{ route('afficherFormulaireConnexion') }}" class="btn btn-outline-white" style="background:var(--gris-moyen); color:var(--texte);">J'ai déjà un compte</a>
+        </div>
+    </form>
+
+</div>
+
+<script>
+(function () {
+    var select      = document.getElementById('typeStructure');
+    var secPorteur  = document.getElementById('section-porteur');
+    var secStruct   = document.getElementById('section-structure');
+    var secS        = document.getElementById('section-startup');
+    var secE        = document.getElementById('section-entreprise');
+    var secRef      = document.getElementById('section-referent');
+
+    var reqStartup    = ['statutJuridiqueS', 'nombreAssocies', 'nombreSalaries'];
+    var reqEntreprise = ['statutJuridiqueE', 'effectif', 'chiffreAffaires'];
+    var reqStructure  = ['nomStructure', 'formeJuridique', 'numSIRET_RNA', 'dateCreation', 'adresseSiege', 'commune'];
+    var reqReferent   = ['referentNom', 'referentFonction', 'referentEmail', 'referentTelephone'];
+
+    function setSection(type) {
+        var isStartup    = type === 'startup';
+        var isEntreprise = type === 'entreprise';
+        var isPorteur    = type === 'porteur';
+        var hasStruct    = !isPorteur;
+
+        secPorteur.style.display = isPorteur  ? '' : 'none';
+        secStruct.style.display  = hasStruct  ? '' : 'none';
+        secS.style.display       = isStartup  ? '' : 'none';
+        secE.style.display       = isEntreprise ? '' : 'none';
+        secRef.style.display     = hasStruct  ? '' : 'none';
+
+        toggleSection(secStruct, hasStruct,    reqStructure);
+        toggleSection(secS,      isStartup,    reqStartup);
+        toggleSection(secE,      isEntreprise, reqEntreprise);
+        toggleSection(secRef,    hasStruct,    reqReferent);
+    }
+
+    function toggleSection(section, active, requiredNames) {
+        section.querySelectorAll('input, select, textarea').forEach(function (el) {
+            el.disabled = !active;
+            el.required = active && requiredNames.indexOf(el.name) !== -1;
+        });
+    }
+
+    select.addEventListener('change', function () {
+        setSection(this.value);
+    });
+
+    setSection(select.value);
+})();
+</script>
+{% endblock %}

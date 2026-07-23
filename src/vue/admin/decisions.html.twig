@@ -1,0 +1,158 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Décisions finales — {% if ami is not null %}AMI {{ ami.titreAmi }}{% else %}Challenge {{ challenge.titreChallenge }}{% endif %} — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set idParent = ami is not null ? ami.idAmi : challenge.idChallenge %}
+{% set typeParent = ami is not null ? 'ami' : 'challenge' %}
+{% set titreParent = ami is not null ? ami.titreAmi : challenge.titreChallenge %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Décisions finales</span>
+        <h1>{{ titreParent }}</h1>
+        <p>{{ candidatures|length }} candidature(s) en instruction — classées du meilleur au moins bon score</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if ami is not null %}
+        <a href="{{ route('adminDetailAmi', {id: ami.idAmi}) }}" class="btn btn-outline-white">← Retour à l'AMI</a>
+        {% else %}
+        <a href="{{ route('adminDetailChallenge', {id: challenge.idChallenge}) }}" class="btn btn-outline-white">← Retour au challenge</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}" {% if ami is not null %}class="admin-nav-active"{% endif %}>AMI</a>
+    <a href="{{ route('adminChallenges') }}" {% if challenge is not null %}class="admin-nav-active"{% endif %}>Challenges</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminAffectations') }}">Affectations</a>
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+
+{% if candidatures|length == 0 %}
+<div class="admin-card">
+    <div class="admin-card-head"><h2>Aucune candidature en instruction</h2></div>
+    <p style="padding:1.5rem 1.75rem; color:#6b7280;">Il n'y a pas encore de candidatures passées en instruction via "Fin de notation".</p>
+</div>
+{% else %}
+
+{% for c in candidatures %}
+{% set score = scores[c.idCandidature] ?? null %}
+{% set scoreVal = score ?? 0 %}
+{% if scoreVal >= 75 %}
+    {% set reco = 'retenir' %}
+    {% set recoColor = 'background:#d1fae5; color:#065f46;' %}
+    {% set recoLabel = 'À retenir' %}
+{% elseif scoreVal >= 55 %}
+    {% set reco = 'approfondir' %}
+    {% set recoColor = 'background:#fef3c7; color:#92400e;' %}
+    {% set recoLabel = 'À approfondir' %}
+{% else %}
+    {% set reco = 'ne-pas-retenir' %}
+    {% set recoColor = 'background:#fee2e2; color:#991b1b;' %}
+    {% set recoLabel = 'Non retenir' %}
+{% endif %}
+
+<div class="admin-card" style="margin-bottom:1.5rem;" id="cand-{{ c.idCandidature }}">
+    <div class="admin-card-head" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <h2 style="margin:0; flex:1;">
+            <a href="{{ route('adminDetailCandidature', {id: c.idCandidature}) }}" class="tlink">{{ c.nomProjet }}</a>
+        </h2>
+        {% if score is not null %}
+        <span style="font-size:1.5rem; font-weight:700; color:#1e3a5f;">{{ score }}/100</span>
+        <span class="abadge" style="{{ recoColor }} font-size:.85rem; padding:.3rem .8rem;">{{ recoLabel }}</span>
+        {% else %}
+        <span class="abadge" style="background:#f3f4f6; color:#6b7280;">Non noté</span>
+        {% endif %}
+    </div>
+
+    <div style="padding:1.25rem 1.75rem;">
+        <p style="color:#6b7280; font-size:.9rem; margin:0 0 1rem;">
+            Filière : <strong>{{ c.filiereCandidat ?? '—' }}</strong>
+            &nbsp;·&nbsp; Déposée le {{ c.dateDepot|date('d/m/Y') }}
+        </p>
+
+        {% if score is not null %}
+                <div style="background:#f3f4f6; border-radius:999px; height:10px; margin-bottom:1.25rem; overflow:hidden;">
+            <div style="height:100%; width:{{ score }}%; border-radius:999px;
+                background: {% if scoreVal >= 75 %}#10b981{% elseif scoreVal >= 55 %}#f59e0b{% else %}#ef4444{% endif %};
+                transition:width .4s;"></div>
+        </div>
+        {% endif %}
+
+                <form method="POST" action="{{ route('adminDecisionFinale', {id: c.idCandidature}) }}"
+              onsubmit="return validerDecision(this)">
+            <input type="hidden" name="{{ typeParent == 'ami' ? 'idAmi' : 'idChallenge' }}" value="{{ idParent }}">
+            <div style="display:flex; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+                <div>
+                    <label style="font-weight:600; font-size:.9rem; display:block; margin-bottom:.4rem;">Décision finale</label>
+                    <div style="display:flex; gap:.75rem;">
+                        <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer; font-size:.9rem;">
+                            <input type="radio" name="decision" value="selectionne"
+                                   {% if reco == 'retenir' %}checked{% endif %}
+                                   onchange="toggleMotif(this.closest('form'), false)">
+                            <span style="color:#065f46; font-weight:600;">Sélectionner</span>
+                        </label>
+                        <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer; font-size:.9rem;">
+                            <input type="radio" name="decision" value="refuse"
+                                   {% if reco == 'ne-pas-retenir' %}checked{% endif %}
+                                   onchange="toggleMotif(this.closest('form'), true)">
+                            <span style="color:#991b1b; font-weight:600;">Refuser</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="bloc-motif" style="flex:1; min-width:220px; {% if reco != 'ne-pas-retenir' %}display:none;{% endif %}">
+                    <label style="font-weight:600; font-size:.9rem; display:block; margin-bottom:.4rem; color:#991b1b;">
+                        Motif du refus <span style="color:#dc2626;">*</span>
+                    </label>
+                    <textarea name="motifRefus" rows="3"
+                              placeholder="Expliquez le motif du refus (sera envoyé par email)..."
+                              style="width:100%; padding:.5rem .75rem; border:1px solid #dc2626; border-radius:8px; font-size:.85rem; resize:vertical;"></textarea>
+                </div>
+                <div style="padding-top:1.5rem;">
+                    <button type="submit" class="abtn abtn-blue">Valider et envoyer l'email</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+{% endif %}
+
+</div>
+
+<script>
+function toggleMotif(form, show) {
+    var bloc = form.querySelector('.bloc-motif');
+    var ta = form.querySelector('textarea[name="motifRefus"]');
+    if (bloc) bloc.style.display = show ? 'block' : 'none';
+    if (ta) ta.required = show;
+}
+function validerDecision(form) {
+    var decision = form.querySelector('input[name="decision"]:checked');
+    if (!decision) { alert('Veuillez choisir une décision.'); return false; }
+    if (decision.value === 'refuse') {
+        var motif = form.querySelector('textarea[name="motifRefus"]');
+        if (!motif || motif.value.trim() === '') { alert('Le motif du refus est obligatoire.'); return false; }
+    }
+    var label = decision.value === 'selectionne' ? 'sélectionner' : 'refuser';
+    return confirm('Confirmer la décision de ' + label + ' cette candidature ? Un email sera envoyé à la startup.');
+}
+// Init : afficher motif si refus pré-coché
+document.querySelectorAll('form').forEach(function(form) {
+    var checked = form.querySelector('input[name="decision"]:checked');
+    if (checked) toggleMotif(form, checked.value === 'refuse');
+});
+</script>
+
+{% endblock %}

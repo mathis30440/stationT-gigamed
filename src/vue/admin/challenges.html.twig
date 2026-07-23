@@ -1,0 +1,82 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Challenges — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set sColor = {
+    'ouvert':   'background:#d1fae5; color:#065f46;',
+    'cloturé':  'background:#dbeafe; color:#1d4ed8;',
+    'archivé':  'background:#f3f4f6; color:#374151;'
+} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Challenges</h1>
+        <p>{{ challenges|length }} challenge(s) enregistré(s) sur la plateforme</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminDashboard') }}" class="btn btn-outline-white">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}" class="admin-nav-active">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Liste des challenges</h2>
+        <span class="admin-card-count">{{ challenges|length }}</span>
+    </div>
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Titre</th>
+                <th>Filière</th>
+                <th>Type</th>
+                <th>Déposé le</th>
+                <th>Statut actuel</th>
+                <th>Changer le statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in challenges %}
+            <tr>
+                <td class="td-id">{{ c.idChallenge }}</td>
+                <td style="font-weight:600; max-width:280px;"><a href="{{ route('adminDetailChallenge', {id: c.idChallenge}) }}" class="tlink">{{ c.titreChallenge }}</a></td>
+                <td class="td-muted">{{ c.filiere.value }}</td>
+                <td class="td-muted">{{ c.typeChallenge.value }}</td>
+                <td class="td-muted">{{ c.dateDepot|date('d/m/Y') }}</td>
+                <td>
+                    <span class="abadge" style="{{ sColor[c.statutChallenge.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+                        {{ c.statutChallenge.value }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ route('adminDetailChallenge', {id: c.idChallenge}) }}" class="abtn abtn-slate">Détail</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr class="admin-empty-row"><td colspan="7">Aucun challenge enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+
+{% endblock %}

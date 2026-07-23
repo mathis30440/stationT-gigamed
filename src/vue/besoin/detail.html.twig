@@ -1,0 +1,191 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}{{ besoin.titreBesoin }} — Station T{% endblock %}
+
+{% block contenu %}
+
+{% set isAdmin = isAdmin ?? false %}
+
+{% set sColorBesoin = {
+    'brouillon':           'background:#fef3c7; color:#92400e;',
+    'en attente':          'background:#fef9c3; color:#854d0e;',
+    'transformé challenge':'background:#d1fae5; color:#065f46;',
+    'transformé AMI':      'background:#d1fae5; color:#065f46;',
+    'refusé':              'background:#fee2e2; color:#991b1b;'
+} %}
+
+{% if isAdmin %}
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Besoin</span>
+        <h1>{{ besoin.titreBesoin }}</h1>
+        <p>
+            <span class="abadge" style="{{ sColorBesoin[besoin.statutBesoin.value] ?? 'background:#f3f4f6; color:#374151;' }}">{{ besoin.statutBesoin.value|capitalize }}</span>
+            &nbsp;·&nbsp; Filière : {{ besoin.filiere.value|capitalize }}
+            &nbsp;·&nbsp; Déposé le {{ besoin.dateDepot|date('d/m/Y') }}
+        </p>
+    </div>
+    <div class="admin-hero-right">
+        {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}
+        {% if besoin.statutBesoin.value == 'brouillon' and besoin.idUtilisateur == utilisateur.idUtilisateur %}
+        <a href="{{ route('adminAfficherFormulaireSoumettreBesoins') }}?id={{ besoin.idBesoin }}" class="btn" style="background:#f59e0b; color:#fff; border:none;">Continuer à remplir</a>
+        {% else %}
+        <a href="{{ route('adminAfficherFormulaireModifierBesoin', {id: besoin.idBesoin}) }}" class="btn btn-blue">Modifier</a>
+        {% endif %}
+        <form method="POST" action="{{ route('adminSupprimerBesoin', {id: besoin.idBesoin}) }}"
+              onsubmit="return confirm('Supprimer définitivement ce besoin ? Cette action est irréversible.')">
+            <button type="submit" class="btn" style="background:#dc2626; color:#fff; border:none;">Supprimer</button>
+        </form>
+        {% endif %}
+        <a href="{{ route('adminBesoins') }}" class="btn btn-outline-white">← Retour aux besoins</a>
+    </div>
+</div>
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}" class="admin-nav-active">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+{% else %}
+<section class="hero">
+    <div class="hero-tag">Mon besoin</div>
+    <h1>{{ besoin.titreBesoin }}</h1>
+    <p>
+        <span class="ami-tag" style="{{ sColorBesoin[besoin.statutBesoin.value] ?? 'background:rgba(255,255,255,.15); color:#fff;' }}">{{ besoin.statutBesoin.value|capitalize }}</span>
+        &nbsp;·&nbsp; Filière : {{ besoin.filiere.value|capitalize }}
+        &nbsp;·&nbsp; Déposé le {{ besoin.dateDepot|date('d/m/Y') }}
+    </p>
+    <div class="hero-actions">
+        <a href="{{ route('monEspace') }}" class="btn btn-outline-white">← Retour à mon espace</a>
+    </div>
+</section>
+{% endif %}
+
+<div class="page-form-wide">
+
+    {% if isAdmin and soumetteur is defined and soumetteur is not null and soumetteur.idUtilisateur is not null %}
+    <div class="form-card">
+        <h2>Soumis par</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem;">
+            <div>
+                <p style="margin:0; font-weight:600;">{{ soumetteur.prenomUtilisateur }} {{ soumetteur.nomUtilisateur }}</p>
+                <p style="margin:.2rem 0 0; color:#6b7280; font-size:.9rem;">{{ soumetteur.emailUtilisateur }}</p>
+            </div>
+            <a href="{{ route('adminDetailUtilisateur', {id: soumetteur.idUtilisateur}) }}" class="abtn abtn-blue">
+                Voir le profil →
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if isAdmin and besoin.statutBesoin.value == 'en attente' %}
+    <div class="form-card">
+        <h2>Actions</h2>
+        <div style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:center;">
+            <a href="{{ route('adminBesoinVersChallenge', {id: besoin.idBesoin}) }}" class="btn btn-blue">→ Transformer en Challenge</a>
+            <a href="{{ route('adminBesoinVersAmi', {id: besoin.idBesoin}) }}" class="btn" style="background:#059669; color:#fff; border:none; border-radius:8px; padding:.6rem 1.25rem; cursor:pointer; text-decoration:none;">→ Transformer en AMI</a>
+            <button type="button" class="btn" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:.6rem 1.25rem; cursor:pointer;"
+                    onclick="document.getElementById('form-refus').style.display = document.getElementById('form-refus').style.display === 'none' ? '' : 'none'">
+                Refuser
+            </button>
+        </div>
+        <form id="form-refus" method="POST" action="{{ route('adminRefuserBesoin', {id: besoin.idBesoin}) }}"
+              style="display:none; margin-top:1rem;">
+            <div class="form-group">
+                <label for="raisonRefus">Motif du refus <span class="required">*</span> <span class="optional">(visible par l'entreprise)</span></label>
+                <textarea id="raisonRefus" name="raisonRefus" rows="3" required
+                          placeholder="Expliquez brièvement pourquoi ce besoin n'est pas retenu…"
+                          style="width:100%; resize:vertical;"></textarea>
+            </div>
+            <button type="submit" class="btn" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:.6rem 1.25rem; cursor:pointer;">
+                Confirmer le refus
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    {% if not isAdmin %}
+    {% if besoin.statutBesoin.value == 'brouillon' %}
+    <div class="form-card" style="border-left:4px solid #f59e0b; background:#fffbeb;">
+        <p style="color:#92400e; font-weight:600; margin:0 0 .75rem;">Ce besoin est enregistré en brouillon — il n'a pas encore été soumis.</p>
+        <a href="{{ route('afficherFormulaireBesoin') }}" class="btn btn-blue">Continuer à remplir et soumettre</a>
+    </div>
+    {% elseif besoin.statutBesoin.value == 'transformé challenge' or besoin.statutBesoin.value == 'transformé AMI' %}
+    <div class="form-card" style="border-left:4px solid var(--turquoise); background:#f0fdf4;">
+        <p style="color:#065f46; font-weight:600; margin:0;">
+            ✓ Votre besoin a été pris en compte et
+            {% if besoin.statutBesoin.value == 'transformé challenge' %}transformé en challenge{% else %}transformé en AMI{% endif %}.
+            L'équipe Station T vous contactera prochainement.
+        </p>
+    </div>
+    {% elseif besoin.statutBesoin.value == 'refusé' %}
+    <div class="form-card" style="border-left:4px solid #dc2626; background:#fef2f2;">
+        <p style="color:#991b1b; font-weight:600; margin:0 0 .5rem;">
+            Votre besoin n'a pas pu être retenu.
+        </p>
+        {% if besoin.raisonRefus %}
+        <p style="color:#7f1d1d; margin:0;">{{ besoin.raisonRefus }}</p>
+        {% else %}
+        <p style="color:#991b1b; margin:0;">N'hésitez pas à nous contacter pour plus d'informations.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <div class="form-card">
+        <h2>Description du besoin</h2>
+        <div class="form-group">
+            <label>Objectif principal</label>
+            <p class="info-value">{{ besoin.objectifBesoin }}</p>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Public visé</label>
+                <p class="info-value">{{ besoin.publicVise }}</p>
+            </div>
+            <div class="form-group">
+                <label>Périmètre prioritaire</label>
+                <p class="info-value">{{ besoin.perimetrePrioritaire }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>Contexte &amp; Enjeux</h2>
+        <div class="form-group">
+            <label>Vision à long terme</label>
+            <p class="info-value">{{ besoin.vision }}</p>
+        </div>
+        <div class="form-group">
+            <label>Enjeux majeurs</label>
+            <p class="info-value">{{ besoin.enjeuxMajeurs }}</p>
+        </div>
+        <div class="form-group">
+            <label>Besoins prioritaires</label>
+            <p class="info-value">{{ besoin.besoinsPrioritaires }}</p>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h2>Pistes d'innovation</h2>
+        <div class="form-group">
+            <label>Exemples d'innovations souhaitées</label>
+            <p class="info-value">{{ besoin.exemplesInnovations }}</p>
+        </div>
+        {% if besoin.partenaires %}
+        <div class="form-group">
+            <label>Partenaires potentiels</label>
+            <p class="info-value">{{ besoin.partenaires }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

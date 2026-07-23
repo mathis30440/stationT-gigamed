@@ -1,0 +1,95 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}AMI — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set sColor = {
+    'brouillon':  'background:#fef3c7; color:#92400e;',
+    'en attente': 'background:#fef9c3; color:#854d0e;',
+    'ouvert':     'background:#d1fae5; color:#065f46;',
+    'cloturé':    'background:#dbeafe; color:#1d4ed8;',
+    'archivé':    'background:#f3f4f6; color:#374151;'
+} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration</span>
+        <h1>Appels à Manifestation d'Intérêt</h1>
+        <p>{{ amis|length }} AMI(s) enregistré(s) sur la plateforme</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminAfficherFormulaireCreerAmi') }}" class="btn btn-primary">+ Créer un AMI</a>
+        <a href="{{ route('adminDashboard') }}" class="btn btn-outline-white">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}" class="admin-nav-active">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="admin-wide">
+<div class="admin-card">
+    <div class="admin-card-head">
+        <h2>Liste des AMI</h2>
+        <span class="admin-card-count">{{ amis|length }}</span>
+    </div>
+    <div class="admin-table-wrap">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Titre</th>
+                <th>Filière</th>
+                <th>Ouverture</th>
+                <th>Clôture</th>
+                <th>Statut actuel</th>
+                <th>Changer le statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in amis %}
+            <tr>
+                <td class="td-id">{{ a.idAmi }}</td>
+                <td style="font-weight:600; max-width:280px;"><a href="{{ route('adminDetailAmi', {id: a.idAmi}) }}" class="tlink">{{ a.titreAmi }}</a></td>
+                <td class="td-muted">{{ a.filiere.value }}</td>
+                <td class="td-muted">{{ a.dateOuverture|date('Y') == '2099' ? '—' : a.dateOuverture|date('d/m/Y') }}</td>
+                <td class="td-muted">{{ a.dateCloture|date('Y') == '2099' ? '—' : a.dateCloture|date('d/m/Y') }}</td>
+                <td>
+                    <span class="abadge" style="{{ sColor[a.statutAmi.value] ?? 'background:#f3f4f6; color:#374151;' }}">
+                        {{ a.statutAmi.value }}
+                    </span>
+                </td>
+                <td>
+                    {% if a.statutAmi.value == 'brouillon' and a.idUtilisateur == utilisateur.idUtilisateur %}
+                    <div class="abtn-row">
+                        <a href="{{ route('adminAfficherFormulaireCreerAmi') }}?id={{ a.idAmi }}" class="abtn" style="background:#f59e0b; color:#fff;">Continuer</a>
+                        <form method="POST" action="{{ route('adminPublierAmi', {id: a.idAmi}) }}"
+                              onsubmit="return confirm('Publier cet AMI ? Vérifiez que tous les champs sont bien remplis.')">
+                            <button type="submit" class="abtn abtn-blue">Publier</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <a href="{{ route('adminDetailAmi', {id: a.idAmi}) }}" class="abtn abtn-slate">Détail</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr class="admin-empty-row"><td colspan="7">Aucun AMI enregistré.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+</div>
+
+{% endblock %}

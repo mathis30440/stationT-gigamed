@@ -1,0 +1,197 @@
+{% extends 'base/base.html.twig' %}
+
+{% set isModification = ami is defined and ami is not null %}
+
+{% block titre %}{% if isModification %}Modifier l'AMI{% else %}Créer un AMI{% endif %} — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set v = ancien ?? {} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration{% if isModification %} — Modification{% endif %}</span>
+        <h1>{% if isModification %}Modifier l'AMI{% else %}Créer un AMI{% endif %}</h1>
+        <p>{% if isModification %}{{ ami.titreAmi }}{% else %}Appel à Manifestation d'Intérêt — création directe{% endif %}</p>
+    </div>
+    <div class="admin-hero-right">
+        {% if isModification %}
+        <a href="{{ route('adminDetailAmi', {id: ami.idAmi}) }}" class="btn btn-outline-white">← Retour à l'AMI</a>
+        {% else %}
+        <a href="{{ route('adminAmi') }}" class="btn btn-outline-white">← Retour aux AMI</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}" class="admin-nav-active">AMI</a>
+    <a href="{{ route('adminChallenges') }}">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="page-form-wide">
+
+<form method="POST" action="{% if isModification %}{{ route('adminModifierAmi', {id: ami.idAmi}) }}{% else %}{{ route('adminCreerAmi') }}{% endif %}">
+{% if not isModification and idBrouillonCharge is defined and idBrouillonCharge is not null %}
+<input type="hidden" name="idBrouillonCharge" value="{{ idBrouillonCharge }}">
+{% endif %}
+
+        {% if isModification %}
+    <div class="form-card">
+        <h2>Statut</h2>
+        <div class="form-group">
+            <label for="statutAmi">Statut de l'AMI <span class="required">*</span></label>
+            <select id="statutAmi" name="statutAmi" required>
+                <option value="en attente" {% if (v.statutAmi ?? ami.statutAmi.value) == 'en attente' %}selected{% endif %}>En attente</option>
+                <option value="ouvert"     {% if (v.statutAmi ?? ami.statutAmi.value) == 'ouvert' %}selected{% endif %}>Ouvert</option>
+                <option value="cloturé"    {% if (v.statutAmi ?? ami.statutAmi.value) == 'cloturé' %}selected{% endif %}>Clôturé</option>
+                <option value="archivé"    {% if (v.statutAmi ?? ami.statutAmi.value) == 'archivé' %}selected{% endif %}>Archivé</option>
+            </select>
+        </div>
+    </div>
+    {% endif %}
+
+        <div class="form-card">
+        <h2>1. Informations générales</h2>
+
+        <div class="form-group">
+            <label for="titre">Titre de l'AMI <span class="required">*</span></label>
+            <input type="text" id="titre" name="titre"
+                   value="{{ v.titre ?? (isModification ? ami.titreAmi : '') }}" required
+                   {% if not isModification %}placeholder="Ex : AMI Tourisme balnéaire 2026"{% endif %}>
+        </div>
+
+        <div class="form-group">
+            <label for="objectif">Objectif <span class="required">*</span></label>
+            <textarea id="objectif" name="objectif" rows="4" required
+                      {% if not isModification %}placeholder="Décrivez l'objectif principal de cet AMI."{% endif %}>{{ v.objectif ?? (isModification ? ami.objectifAmi : '') }}</textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="filiere">Filière <span class="required">*</span></label>
+                <select id="filiere" name="filiere" required>
+                    <option value="">— Sélectionnez —</option>
+                    {% for f in filieres %}
+                    <option value="{{ f.value }}" {% if (v.filiere ?? (isModification ? ami.filiere.value : '')) == f.value %}selected{% endif %}>{{ f.value|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="publicVise">Public visé <span class="required">*</span></label>
+                <input type="text" id="publicVise" name="publicVise"
+                       value="{{ v.publicVise ?? (isModification ? ami.publicVise : '') }}" required
+                       {% if not isModification %}placeholder="Ex : Startups, PME innovantes"{% endif %}>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="perimetrePrioritaire">Périmètre prioritaire <span class="required">*</span></label>
+            <input type="text" id="perimetrePrioritaire" name="perimetrePrioritaire"
+                   value="{{ v.perimetrePrioritaire ?? (isModification ? ami.perimetrePrioritaire : '') }}" required
+                   {% if not isModification %}placeholder="Ex : Territoire Cap d'Agde Méditerranée"{% endif %}>
+        </div>
+
+        <div class="form-group">
+            <label for="exemplesInnovations">Exemples d'innovations attendues <span class="optional">(facultatif)</span></label>
+            <textarea id="exemplesInnovations" name="exemplesInnovations" rows="3"
+                      {% if not isModification %}placeholder="Ex : Applications mobiles, outils de gestion..."{% endif %}>{{ v.exemplesInnovations ?? (isModification ? ami.exemplesInnovations : '') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="partenaires">Partenaires <span class="optional">(facultatif)</span></label>
+            <input type="text" id="partenaires" name="partenaires"
+                   value="{{ v.partenaires ?? (isModification ? ami.partenaires : '') }}"
+                   {% if not isModification %}placeholder="Ex : Région Occitanie, CCI Hérault"{% endif %}>
+        </div>
+    </div>
+
+        <div class="form-card">
+        <h2>2. Cas d'usage pilote</h2>
+
+        <div class="form-group">
+            <label for="casUsagePilote">Cas d'usage pilote <span class="required">*</span></label>
+            <textarea id="casUsagePilote" name="casUsagePilote" rows="3" required
+                      {% if not isModification %}placeholder="Décrivez le cas d'usage proposé pour le pilote."{% endif %}>{{ v.casUsagePilote ?? (isModification ? ami.casUsagePilote : '') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="perimetreCasUsage">Périmètre du cas d'usage <span class="required">*</span></label>
+            <input type="text" id="perimetreCasUsage" name="perimetreCasUsage"
+                   value="{{ v.perimetreCasUsage ?? (isModification ? ami.perimetreCasUsage : '') }}" required
+                   {% if not isModification %}placeholder="Ex : Cap d'Agde, filière tourisme"{% endif %}>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dureeIndicative">Durée indicative <span class="required">*</span></label>
+                <input type="text" id="dureeIndicative" name="dureeIndicative"
+                       value="{{ v.dureeIndicative ?? (isModification ? ami.dureeIndicative : '') }}" required
+                       {% if not isModification %}placeholder="Ex : 6 mois"{% endif %}>
+            </div>
+            <div class="form-group">
+                <label for="sortieAttendue">Sortie attendue <span class="required">*</span></label>
+                <input type="text" id="sortieAttendue" name="sortieAttendue"
+                       value="{{ v.sortieAttendue ?? (isModification ? ami.sortieAttendue : '') }}" required
+                       {% if not isModification %}placeholder="Ex : Rapport + déploiement"{% endif %}>
+            </div>
+        </div>
+    </div>
+
+        <div class="form-card">
+        <h2>3. Calendrier</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dateOuverture">Ouverture des candidatures <span class="required">*</span></label>
+                <input type="date" id="dateOuverture" name="dateOuverture"
+                       value="{{ v.dateOuverture ?? (isModification ? ami.dateOuverture|date('Y-m-d') : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label for="dateCloture">Clôture <span class="required">*</span></label>
+                <input type="date" id="dateCloture" name="dateCloture"
+                       value="{{ v.dateCloture ?? (isModification ? ami.dateCloture|date('Y-m-d') : '') }}" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="dateAuditions">Auditions <span class="required">*</span></label>
+                <input type="date" id="dateAuditions" name="dateAuditions"
+                       value="{{ v.dateAuditions ?? (isModification ? ami.dateAuditions|date('Y-m-d') : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label for="dateResultats">Résultats <span class="required">*</span></label>
+                <input type="date" id="dateResultats" name="dateResultats"
+                       value="{{ v.dateResultats ?? (isModification ? ami.dateResultats|date('Y-m-d') : '') }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="dateDemarrage">Démarrage <span class="required">*</span></label>
+            <input type="date" id="dateDemarrage" name="dateDemarrage"
+                   value="{{ v.dateDemarrage ?? (isModification ? ami.dateDemarrage|date('Y-m-d') : '') }}" required>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:1rem; margin-bottom:3rem; flex-wrap:wrap;">
+        {% if isModification %}
+        <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+        <a href="{{ route('adminDetailAmi', {id: ami.idAmi}) }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        {% else %}
+        <button type="submit" name="action" value="creer" class="btn btn-blue" style="flex:1; justify-content:center;">Créer l'AMI</button>
+        <button type="submit" name="action" value="brouillon" formnovalidate class="btn" style="background:#f59e0b; color:#fff; border:none; white-space:nowrap;">Sauvegarder en brouillon</button>
+        <a href="{{ route('adminAmi') }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        {% endif %}
+    </div>
+
+</form>
+
+</div>
+
+{% endblock %}

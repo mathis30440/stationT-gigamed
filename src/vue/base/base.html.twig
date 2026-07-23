@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titre %}Station T — Gigamed{% endblock %}</title>
+    <link rel="stylesheet" href="{{ asset('../ressources/css/style.css') }}">
+</head>
+<body>
+
+<header>
+    <nav>
+        <a href="{{ route('accueil') }}" class="nav-logo">
+            <img src="{{ asset('../ressources/image/Station T.jpg') }}" alt="Station T" class="nav-logo-img">
+        </a>
+
+        <div class="nav-links">
+            {% if connexionUtilisateur.estConnecte() %}
+                {% set isStaff = utilisateurConnecte and utilisateurConnecte.roleUtilisateur.value in ['superAdmin', 'admin'] %}
+                <a href="{{ route('listeAmi') }}">AMI</a>
+                <a href="{{ route('listeChallenges') }}">Challenges</a>
+                {% if isStaff %}
+                    <a href="{{ route('adminDashboard') }}" class="btn-nav-outline">Administration</a>
+                {% endif %}
+                <a href="{{ route('monEspace') }}" class="btn-nav-outline">Mon espace</a>
+                <a href="{{ route('deconnecter') }}" class="btn-nav-outline">Se déconnecter</a>
+            {% else %}
+                <a href="{{ route('afficherFormulaireInscription') }}">S'inscrire</a>
+                <a href="{{ route('afficherFormulaireConnexion') }}" class="btn-nav-primary">Se connecter</a>
+            {% endif %}
+        </div>
+    </nav>
+</header>
+
+<main>
+    {% for type, messages in messagesFlash.lireTousMessages() %}
+        {% for message in messages %}
+            <div class="flash flash-{{ type }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {% block contenu %}{% endblock %}
+</main>
+
+<footer>
+    <p>© {{ "now"|date("Y") }} Gigamed — Communauté d'Agglomération Hérault Méditerranée &nbsp;|&nbsp;
+    <a href="mailto:stationt@agglohm.net">stationt@agglohm.net</a> &nbsp;|&nbsp; 06 59 71 38 57</p>
+</footer>
+
+</body>
+</html>

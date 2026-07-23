@@ -1,0 +1,130 @@
+{% extends 'base/base.html.twig' %}
+
+{% block titre %}Modifier le challenge — Administration{% endblock %}
+
+{% block contenu %}
+
+{% set v = ancien ?? {} %}
+
+<div class="admin-hero">
+    <div class="admin-hero-left">
+        <span class="admin-hero-tag">Administration — Modification</span>
+        <h1>Modifier le challenge</h1>
+        <p>{{ challenge.titreChallenge }}</p>
+    </div>
+    <div class="admin-hero-right">
+        <a href="{{ route('adminDetailChallenge', {id: challenge.idChallenge}) }}" class="btn btn-outline-white">← Retour au challenge</a>
+    </div>
+</div>
+
+<div class="admin-nav-strip">
+    <a href="{{ route('adminDashboard') }}">Tableau de bord</a>
+    <span class="admin-nav-sep"></span>
+    <a href="{{ route('adminUtilisateurs') }}">Utilisateurs</a>
+    <a href="{{ route('adminBesoins') }}">Besoins</a>
+    <a href="{{ route('adminCandidatures') }}">Candidatures</a>
+    <a href="{{ route('adminAmi') }}">AMI</a>
+    <a href="{{ route('adminChallenges') }}" class="admin-nav-active">Challenges</a>
+    <span class="admin-nav-sep"></span>
+    {% if utilisateur.roleUtilisateur.value == 'superAdmin' %}<a href="{{ route('adminAffectations') }}">Affectations</a>{% endif %}
+    <a href="{{ route('adminJournal') }}">Journal</a>
+</div>
+
+<div class="page-form-wide">
+
+    <form method="POST" action="{{ route('adminModifierChallenge', {id: challenge.idChallenge}) }}">
+
+                <div class="form-card">
+            <h2>Statut</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="statutChallenge">Statut <span class="required">*</span></label>
+                    <select id="statutChallenge" name="statutChallenge" required>
+                        <option value="brouillon" {% if (v.statutChallenge ?? challenge.statutChallenge.value) == 'brouillon' %}selected{% endif %}>Brouillon</option>
+                        <option value="ouvert"    {% if (v.statutChallenge ?? challenge.statutChallenge.value) == 'ouvert' %}selected{% endif %}>Ouvert</option>
+                        <option value="cloturé"   {% if (v.statutChallenge ?? challenge.statutChallenge.value) == 'cloturé' %}selected{% endif %}>Clôturé</option>
+                        <option value="archivé"   {% if (v.statutChallenge ?? challenge.statutChallenge.value) == 'archivé' %}selected{% endif %}>Archivé</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="typeChallenge">Type de challenge <span class="required">*</span></label>
+                    <select id="typeChallenge" name="typeChallenge" required>
+                        {% for t in typesChallenge %}
+                        <option value="{{ t.value }}" {% if (v.typeChallenge ?? challenge.typeChallenge.value) == t.value %}selected{% endif %}>{{ t.value|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>1. Informations générales</h2>
+            <div class="form-group">
+                <label for="titreChallenge">Titre du challenge <span class="required">*</span></label>
+                <input type="text" id="titreChallenge" name="titreChallenge" value="{{ v.titreChallenge ?? challenge.titreChallenge }}" required>
+            </div>
+            <div class="form-group">
+                <label for="objectifChallenge">Objectif <span class="required">*</span></label>
+                <textarea id="objectifChallenge" name="objectifChallenge" rows="4" required>{{ v.objectifChallenge ?? challenge.objectifChallenge }}</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="filiere">Filière <span class="required">*</span></label>
+                    <select id="filiere" name="filiere" required>
+                        <option value="">— Sélectionnez —</option>
+                        {% for f in filieres %}
+                        <option value="{{ f.value }}" {% if (v.filiere ?? challenge.filiere.value) == f.value %}selected{% endif %}>{{ f.value|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="publicVise">Public visé <span class="required">*</span></label>
+                    <input type="text" id="publicVise" name="publicVise" value="{{ v.publicVise ?? challenge.publicVise }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="perimetrePrioritaire">Périmètre prioritaire <span class="required">*</span></label>
+                <input type="text" id="perimetrePrioritaire" name="perimetrePrioritaire" value="{{ v.perimetrePrioritaire ?? challenge.perimetrePrioritaire }}" required>
+            </div>
+            <div class="form-group">
+                <label for="exemplesInnovations">Exemples d'innovations attendues</label>
+                <textarea id="exemplesInnovations" name="exemplesInnovations" rows="3">{{ v.exemplesInnovations ?? challenge.exemplesInnovations }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="partenaires">Partenaires <span class="optional">(optionnel)</span></label>
+                <input type="text" id="partenaires" name="partenaires" value="{{ v.partenaires ?? challenge.partenaires }}">
+            </div>
+        </div>
+
+                <div class="form-card">
+            <h2>2. Cas d'usage pilote</h2>
+            <div class="form-group">
+                <label for="casUsagePilote">Cas d'usage pilote <span class="required">*</span></label>
+                <textarea id="casUsagePilote" name="casUsagePilote" rows="3" required>{{ v.casUsagePilote ?? challenge.casUsagePilote }}</textarea>
+            </div>
+            <div class="form-group">
+                <label for="perimetreCasUsage">Périmètre du cas d'usage <span class="required">*</span></label>
+                <input type="text" id="perimetreCasUsage" name="perimetreCasUsage" value="{{ v.perimetreCasUsage ?? challenge.perimetreCasUsage }}" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="dureeIndicative">Durée indicative <span class="required">*</span></label>
+                    <input type="text" id="dureeIndicative" name="dureeIndicative" value="{{ v.dureeIndicative ?? challenge.dureeIndicative }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="sortieAttendue">Sortie attendue <span class="required">*</span></label>
+                    <input type="text" id="sortieAttendue" name="sortieAttendue" value="{{ v.sortieAttendue ?? challenge.sortieAttendue }}" required>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; margin-bottom:3rem;">
+            <button type="submit" class="btn btn-blue" style="flex:1; justify-content:center;">Enregistrer les modifications</button>
+            <a href="{{ route('adminDetailChallenge', {id: challenge.idChallenge}) }}" class="btn" style="background:var(--gris-moyen); color:var(--texte);">Annuler</a>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}
