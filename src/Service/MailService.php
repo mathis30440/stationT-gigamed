@@ -219,7 +219,7 @@ class MailService
         $mail->setFrom(ConfigurationMail::$from, ConfigurationMail::$fromName);
         $mail->addAddress($email);
 
-        $lien = ConfigurationSite::$baseUrl . '/choisir-mot-de-passe/' . $token;
+        $lien = ConfigurationSite::getBaseUrl() . '/choisir-mot-de-passe/' . $token;
         $logoPath = __DIR__ . '/../../ressources/image/Station T.jpg';
         $mail->isHTML(true);
         $mail->Subject = 'Votre compte Station T a été créé';
@@ -486,7 +486,7 @@ class MailService
         $mail->addAddress($email);
         $logoHtml = $this->logoHtml($mail);
 
-        $lien = ConfigurationSite::$baseUrl . '/partenaire/candidature/' . $idCandidature;
+        $lien = ConfigurationSite::getBaseUrl() . '/partenaire/candidature/' . $idCandidature;
 
         $mail->isHTML(true);
         $mail->Subject = 'Rappel — Notation en attente — Station T';
@@ -517,7 +517,7 @@ class MailService
         $mail->addAddress($email);
         $logoHtml = $this->logoHtml($mail);
 
-        $lien = ConfigurationSite::$baseUrl . '/partenaire/candidature/' . $idCandidature;
+        $lien = ConfigurationSite::getBaseUrl() . '/partenaire/candidature/' . $idCandidature;
 
         $mail->isHTML(true);
         $mail->Subject = 'Nouvelle candidature à évaluer — Station T';
@@ -557,7 +557,7 @@ class MailService
         $mail->setFrom(ConfigurationMail::$from, ConfigurationMail::$fromName);
         $mail->addAddress($email);
 
-        $lien = ConfigurationSite::$baseUrl . '/verifier-email/' . $token;
+        $lien = ConfigurationSite::getBaseUrl() . '/verifier-email/' . $token;
         $logoPath = __DIR__ . '/../../ressources/image/Station T.jpg';
 
         $mail->isHTML(true);
