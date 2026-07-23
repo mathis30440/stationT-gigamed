@@ -1,0 +1,19 @@
+{
+	frankenphp
+	admin off
+}
+
+:{env.PORT} {
+	root * /app/web
+
+	handle /ressources/* {
+		root * /app
+		file_server
+	}
+
+	encode gzip
+
+	php_server {
+		index controleurFrontal.php
+	}
+}
