@@ -6,14 +6,9 @@ use PDO;
 class ConfigurationBDDMySQL implements ConfigurationBDDInterface
 {
     private string $login = "root";
-    private string $motDePasse = "aXejgNWXtRyJJYfspcJtxBVkeOUhNLQo";
-    private string $nomBDD = "railway";
-    private string $hostname = "mysql.railway.internal";
-
-    
-
-    
-
+    private string $motDePasse = "root";
+    private string $nomBDD = "gigamed";
+    private string $hostname = "gigamed-mysql";
     private string  $port = '3306';
 
     public function getLogin(): string
