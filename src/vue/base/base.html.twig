@@ -14,7 +14,9 @@
             <img src="{{ asset('../ressources/image/Station T.jpg') }}" alt="Station T" class="nav-logo-img">
         </a>
 
-        <div class="nav-links">
+        <button class="nav-burger" id="nav-burger" aria-label="Menu" aria-expanded="false">&#9776;</button>
+
+        <div class="nav-links" id="nav-links">
             {% if connexionUtilisateur.estConnecte() %}
                 {% set isStaff = utilisateurConnecte and utilisateurConnecte.roleUtilisateur.value in ['superAdmin', 'admin'] %}
                 <a href="{{ route('listeAmi') }}">AMI</a>
@@ -31,6 +33,19 @@
         </div>
     </nav>
 </header>
+
+<script>
+(function() {
+    var burger = document.getElementById('nav-burger');
+    var links  = document.getElementById('nav-links');
+    if (!burger || !links) return;
+    burger.addEventListener('click', function() {
+        var open = links.classList.toggle('nav-open');
+        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        burger.textContent = open ? '\u2715' : '\u2630';
+    });
+})();
+</script>
 
 <main>
     {% for type, messages in messagesFlash.lireTousMessages() %}

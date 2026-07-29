@@ -842,23 +842,78 @@ footer a { color: var(--turquoise); text-decoration: none; }
 .empty-state p { font-size: .95rem; margin-bottom: .4rem; }
 .text-muted { color: var(--gris-texte); font-size: .88rem; }
 
+/* ---- BURGER MENU ---- */
+.nav-burger {
+    display: none;
+    background: none;
+    border: 1.5px solid rgba(255,255,255,.4);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: .35rem .55rem;
+    color: var(--blanc);
+    font-size: 1.3rem;
+    line-height: 1;
+    transition: background .2s;
+}
+
+.nav-burger:hover { background: rgba(255,255,255,.12); }
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 900px) {
     .espace-grid { grid-template-columns: 1fr; }
+    .public-grid { grid-template-columns: repeat(2, 1fr); }
+    .ami-dates { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .nav-burger { display: block; }
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 68px;
+        left: 0;
+        right: 0;
+        background: var(--bleu-fonce);
+        flex-direction: column;
+        align-items: stretch;
+        padding: .75rem 1rem 1rem;
+        gap: .4rem;
+        box-shadow: 0 6px 16px rgba(0,0,0,.3);
+        z-index: 99;
+    }
+
+    .nav-links.nav-open { display: flex; }
+
+    .nav-links a {
+        text-align: center;
+        padding: .75rem 1rem;
+        font-size: .95rem;
+    }
 }
 
 @media (max-width: 640px) {
     .form-row { grid-template-columns: 1fr; }
-    .hero { padding: 2.5rem 1.5rem; }
-    .hero h1 { font-size: 1.8rem; }
+    .hero { padding: 2rem 1.25rem; }
+    .hero h1 { font-size: 1.65rem; }
+    .hero p { font-size: 1rem; }
     nav { padding: 0 1rem; }
-    main { padding: 1.5rem 1rem 2rem; }
-    .form-card { padding: 1.5rem; }
+    main { padding: 1.25rem 1rem 2rem; }
+    .form-card { padding: 1.25rem; }
     .entity-card-top { padding: 1.25rem 1.25rem .75rem; }
     .entity-card-footer { padding: .75rem 1.25rem; }
     .meta-block { padding: .65rem 1rem; }
-    .espace-header { padding: 1.5rem; }
-    .espace-header h1 { font-size: 1.4rem; }
+    .espace-header { padding: 1.25rem; }
+    .espace-header h1 { font-size: 1.3rem; }
+    .page-title { font-size: 1.4rem; }
+    .public-grid { grid-template-columns: repeat(2, 1fr); }
+    .ami-dates { grid-template-columns: repeat(2, 1fr); }
+    .section-title { font-size: 1.2rem; }
+    .filieres-grid { grid-template-columns: repeat(2, 1fr); }
+    .admin-hero { padding: 1.25rem 1rem; }
+    .admin-hero h1 { font-size: 1.3rem; }
+    .admin-nav-strip { gap: .25rem; padding: .4rem .5rem; overflow-x: auto; flex-wrap: nowrap; }
+    .admin-nav-strip a { font-size: .78rem; padding: .32rem .6rem; white-space: nowrap; }
 }
 /* ---- AMI CARDS ---- */
 .ami-card {
