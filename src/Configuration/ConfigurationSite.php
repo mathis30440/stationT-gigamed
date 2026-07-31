@@ -3,7 +3,7 @@
 namespace App\Gigamed\Configuration;
 class ConfigurationSite
 {
-    public static string $baseUrl = 'http://localhost/gigamed/web';
+    public static string $baseUrl = 'https://stationt.cahm.net';
 
     public static function getBaseUrl(): string
     {
