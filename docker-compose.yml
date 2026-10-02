@@ -1,0 +1,40 @@
+services:
+  app:
+    build: .
+    container_name: gigamed-app
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    ports:
+      - "80:80"
+    volumes:
+      - .:/var/www/html/gigamed
+    env_file:
+      - .env
+
+  mysql:
+    image: mysql:8.4
+    container_name: gigamed-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gigamed
+    ports:
+      - "3306:3306"
+    volumes:
+      - gigamed_mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: gigamed-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
+
+volumes:
+  gigamed_mysql_data:
